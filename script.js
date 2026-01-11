@@ -1,11 +1,12 @@
 // --- CONFIGURATION ---
-const API_URL = "https://script.google.com/macros/s/AKfycbw3f4AdTSvWfwVCssMXZ2SWq0ilYOx_yt0kbO85dRuZQdI9ZrquJgJRZMt_wrVOgdiX/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbyWEY0gzHGvjjzzEqpzGWxCLDiTaTWmUg5ylx1aCPnAMj6U-WS4fdHDcZPS5TlU2YJU/exec"; 
 
 // --- STATE MANAGEMENT ---
 let appData = [];
 let currentUser = "";
 let currentPlatform = "Instagram"; // Default
 let isLoading = false;
+let profileConfig = {};
 
 // --- DEBOUNCE UTILITY ---
 let debounceTimer;
@@ -118,10 +119,10 @@ async function fetchData() {
     try {
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        appData = data;
+        const result = await response.json();
+        appData = result.videos || [];
+        profileConfig = result.profileConfig || {};
         renderDashboard();
-        showToast('Data loaded successfully', 'success');
     } catch (error) {
         showToast('Error loading data. Check internet connection.', 'error');
         console.error('Fetch error:', error);
@@ -129,27 +130,61 @@ async function fetchData() {
     showLoading(false);
 }
 
+// Helper function to get current profile names
+function getCurrentProfileNames() {
+    if (profileConfig[currentUser] && profileConfig[currentUser][currentPlatform]) {
+        const config = profileConfig[currentUser][currentPlatform];
+        return [
+            config.profile1 || "Profile 1",
+            config.profile2 || "Profile 2", 
+            config.profile3 || "Profile 3"
+        ];
+    }
+    return ["Profile 1", "Profile 2", "Profile 3"];
+}
+
+// Function to update the dropdown in add modal
+function updateProfileDropdown() {
+    const select = document.getElementById('new-profile-select');
+    if (!select) return;
+    
+    select.innerHTML = '';
+    const profileNames = getCurrentProfileNames();
+    
+    profileNames.forEach((name, index) => {
+        const option = document.createElement('option');
+        option.value = `Profile ${index + 1}`; // Keep the original value for backend
+        option.textContent = name;
+        select.appendChild(option);
+    });
+}
+
 function renderDashboard() {
     const container = document.getElementById('profiles-container');
     container.innerHTML = "";
 
-    // 1. Filter Data for Current User & Platform
+    // Get profile names for current user and platform
+    const profileNames = getCurrentProfileNames();
+    
+    // Filter Data for Current User & Platform
     const filteredData = appData.filter(item => 
         item.person === currentUser && item.platform === currentPlatform
     );
 
-    // 2. Group by Profile Name
+    // Group by Profile Name (using the original Profile 1/2/3 as keys)
     const grouped = {};
     ["Profile 1", "Profile 2", "Profile 3"].forEach(p => grouped[p] = []);
     
     filteredData.forEach(item => {
-        if (!grouped[item.profile]) grouped[item.profile] = [];
-        grouped[item.profile].push(item);
+        if (grouped[item.profile]) {
+            grouped[item.profile].push(item);
+        }
     });
 
-    // 3. Render Each Profile Section
-    Object.keys(grouped).forEach(profileName => {
-        const videos = grouped[profileName];
+    // Render Each Profile Section with dynamic names
+    ["Profile 1", "Profile 2", "Profile 3"].forEach((profileKey, index) => {
+        const videos = grouped[profileKey];
+        const displayName = profileNames[index];
         
         // Calculate Progress
         const total = videos.length;
@@ -162,7 +197,16 @@ function renderDashboard() {
         
         section.innerHTML = `
             <div class="profile-header">
-                <h3 style="color:#fff; font-size: 16px;">${profileName}</h3>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h3 style="color:#fff; font-size: 16px;">${displayName}</h3>
+                    <button class="icon-btn edit-btn" onclick="openProfileSettings(${index})" style="padding: 4px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M11 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22H15C20 22 22 20 22 15V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16.04 3.02001L8.16 10.9C7.86 11.2 7.56 11.79 7.5 12.22L7.07 15.23C6.91 16.32 7.68 17.08 8.77 16.93L11.78 16.5C12.2 16.44 12.79 16.14 13.1 15.84L20.98 7.96001C22.34 6.60001 22.98 5.02001 20.98 3.02001C18.98 1.02001 17.4 1.66001 16.04 3.02001Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14.91 4.15002C15.58 6.54002 17.45 8.41002 19.85 9.09002" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
                 <span style="color:#666; font-size: 12px;">${uploaded}/${total} Uploaded</span>
             </div>
             <div class="progress-track">
@@ -175,6 +219,9 @@ function renderDashboard() {
         `;
         container.appendChild(section);
     });
+    
+    // Update the dropdown in add modal
+    updateProfileDropdown();
 }
 
 function createVideoRow(video) {
@@ -316,6 +363,86 @@ async function deleteVideo(id) {
             renderDashboard();
         }
     }
+}
+
+// --- PROFILE SETTINGS FUNCTIONS ---
+function openProfileSettings(profileIndex = null) {
+    const modal = document.getElementById('profile-settings-modal');
+    const profileNames = getCurrentProfileNames();
+    
+    // Fill the input fields with current names
+    document.getElementById('profile-name-1').value = profileNames[0];
+    document.getElementById('profile-name-2').value = profileNames[1];
+    document.getElementById('profile-name-3').value = profileNames[2];
+    
+    modal.classList.remove('hidden');
+    
+    // Focus on specific profile if index provided
+    if (profileIndex !== null) {
+        setTimeout(() => {
+            document.getElementById(`profile-name-${profileIndex + 1}`).focus();
+        }, 100);
+    }
+}
+
+function toggleProfileSettingsModal(show) {
+    const modal = document.getElementById('profile-settings-modal');
+    if (show) modal.classList.remove('hidden');
+    else modal.classList.add('hidden');
+}
+
+async function saveProfileNames() {
+    const profile1 = document.getElementById('profile-name-1').value.trim();
+    const profile2 = document.getElementById('profile-name-2').value.trim();
+    const profile3 = document.getElementById('profile-name-3').value.trim();
+    
+    // Validate names
+    if (!profile1 || !profile2 || !profile3) {
+        showToast('All profile names are required', 'error');
+        return;
+    }
+    
+    showLoading(true);
+    
+    const profileData = {
+        action: "updateProfileNames",
+        user: currentUser,
+        platform: currentPlatform,
+        profileNames: {
+            profile1: profile1,
+            profile2: profile2,
+            profile3: profile3
+        }
+    };
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify(profileData)
+        });
+        
+        if (!response.ok) throw new Error('Failed to save');
+        
+        // Update local config
+        if (!profileConfig[currentUser]) profileConfig[currentUser] = {};
+        profileConfig[currentUser][currentPlatform] = {
+            profile1: profile1,
+            profile2: profile2,
+            profile3: profile3
+        };
+        
+        // Re-render dashboard with new names
+        renderDashboard();
+        
+        showToast('Profile names updated!', 'success');
+        toggleProfileSettingsModal(false);
+        
+    } catch (error) {
+        showToast('Failed to update profile names', 'error');
+        console.error('Error saving profile names:', error);
+    }
+    
+    showLoading(false);
 }
 
 // --- UTILITIES ---
