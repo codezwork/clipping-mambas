@@ -991,3 +991,82 @@ select.mamba-input {
   align-items: center;
   gap: 10px;
 }
+
+/* Settings Icon Styling - Dark Theme */
+#settings-btn {
+    background: transparent !important;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #333;
+    color: #666; /* Default gray color matching other nav dots */
+}
+
+#settings-btn svg {
+    width: 16px;
+    height: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover State - Turns red */
+#settings-btn:hover {
+    background: rgba(255, 68, 68, 0.1) !important;
+    border-color: #ff4444 !important;
+    color: #ff4444 !important;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 5px 15px rgba(255, 68, 68, 0.2);
+}
+
+#settings-btn:hover svg {
+    transform: rotate(45deg);
+}
+
+/* Active State - When clicked */
+#settings-btn:active {
+    transform: scale(0.95);
+    background: rgba(255, 68, 68, 0.2) !important;
+    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
+}
+
+/* Loading State - When data is loading */
+.is-loading #settings-btn {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+/* Match the other nav dots styling */
+.nav-dots .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.nav-dots .dot:not(#settings-btn):not(#loading-indicator) {
+    background: #333;
+}
+
+.nav-dots .dot:not(#settings-btn):not(#loading-indicator):hover {
+    background: #ff4444;
+}
+
+/* Loading indicator animation */
+#loading-indicator {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
