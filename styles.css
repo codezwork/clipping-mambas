@@ -949,3 +949,45 @@ select.mamba-input {
         padding: 3px 6px;
     }
 }
+
+/* Add to styles.css */
+.edit-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  width: 28px;
+  height: 28px;
+}
+
+.edit-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #3498db;
+  border-color: rgba(52, 152, 219, 0.3);
+  transform: translateY(-2px);
+}
+
+.edit-btn:active {
+  transform: scale(0.95);
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.profile-header > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
