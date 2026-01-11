@@ -44,6 +44,10 @@
                     <span style="color: #ff4444;">&#8592;</span> <span id="current-user-name">USER</span>
                 </div>
                 <div class="nav-dots">
+                    <div class="dot" id="settings-btn" onclick="openProfileSettings()" 
+                        style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 5px;">
+                        ⚙️
+                    </div>
                     <div class="dot" id="loading-indicator" style="background: transparent;"></div>
                 </div>
             </div>
@@ -70,9 +74,7 @@
         <div class="modal-content testimonial-card">
             <h3>ADD NEW VIDEO</h3>
             <select id="new-profile-select" class="mamba-input">
-                <option value="Profile 1">Profile 1</option>
-                <option value="Profile 2">Profile 2</option>
-                <option value="Profile 3">Profile 3</option>
+                <!-- Will be filled dynamically by JavaScript -->
             </select>
             <input type="text" id="new-title" placeholder="Video Title" class="mamba-input">
             <input type="text" id="new-link" placeholder="Video Link" class="mamba-input">
@@ -80,6 +82,27 @@
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="cta-button" onclick="submitNewVideo()">SAVE</button>
                 <button class="cta-button" style="border-color: #444; color: #aaa;" onclick="toggleAddModal(false)">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-settings-modal" class="modal-overlay hidden">
+        <div class="modal-content testimonial-card">
+            <h3>Edit Profile Names</h3>
+            <p style="color: #aaa; font-size: 12px; margin-bottom: 20px;" id="profile-settings-info">
+                <!-- Will be filled by JavaScript -->
+            </p>
+            
+            <input type="text" id="profile-name-1" placeholder="Profile 1 Name" class="mamba-input">
+            <input type="text" id="profile-name-2" placeholder="Profile 2 Name" class="mamba-input">
+            <input type="text" id="profile-name-3" placeholder="Profile 3 Name" class="mamba-input">
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="cta-button" onclick="saveProfileNames()">SAVE CHANGES</button>
+                <button class="cta-button" style="border-color: #444; color: #aaa;" 
+                        onclick="toggleProfileSettingsModal(false)">
+                    CANCEL
+                </button>
             </div>
         </div>
     </div>
