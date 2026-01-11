@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAMBA TRACKER</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <section id="home-view" class="app-view active">
+        <div class="container">
+            <div class="hero-content" style="padding-top: 60px; text-align: center;">
+                <h1>MAMBA <span class="highlight">TRACKER</span></h1>
+                <p style="color: #aaa; margin-bottom: 40px;">Select your workspace</p>
+            </div>
+            
+            <div class="services-grid user-select-grid">
+                <div class="service-card user-card" onclick="openDashboard('Dikshansh')">
+                    <div class="service-icon"><div class="dot-icon"></div></div>
+                    <h3>DIKSHANSH</h3>
+                    <p>Instagram & TikTok Manager</p>
+                </div>
+
+                <div class="service-card user-card" onclick="openDashboard('Aditya')">
+                    <div class="service-icon"><div class="dot-icon"></div></div>
+                    <h3>ADITYA</h3>
+                    <p>Content Strategist</p>
+                </div>
+
+                <div class="service-card user-card" onclick="openDashboard('Anurag')">
+                    <div class="service-icon"><div class="dot-icon"></div></div>
+                    <h3>ANURAG</h3>
+                    <p>Video Editor</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="dashboard-view" class="app-view hidden">
+        <nav class="navbar" style="position: sticky;">
+            <div class="nav-container">
+                <div class="logo" onclick="goHome()" style="cursor: pointer;">
+                    <span style="color: #ff4444;">&#8592;</span> <span id="current-user-name">USER</span>
+                </div>
+                <div class="nav-dots">
+                    <div class="dot" id="loading-indicator" style="background: transparent;"></div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container" style="padding-bottom: 100px;">
+            
+            <div id="profiles-container"></div>
+
+            <button class="cta-button fab-btn" onclick="toggleAddModal(true)">+ ADD VIDEO</button>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchPlatform('Instagram', this)">
+                INSTAGRAM
+            </div>
+            <div class="nav-item" onclick="switchPlatform('TikTok', this)">
+                TIKTOK
+            </div>
+        </div>
+    </section>
+
+    <div id="add-modal" class="modal-overlay hidden">
+        <div class="modal-content testimonial-card">
+            <h3>ADD NEW VIDEO</h3>
+            <select id="new-profile-select" class="mamba-input">
+                <option value="Profile 1">Profile 1</option>
+                <option value="Profile 2">Profile 2</option>
+                <option value="Profile 3">Profile 3</option>
+            </select>
+            <input type="text" id="new-title" placeholder="Video Title" class="mamba-input">
+            <input type="text" id="new-link" placeholder="Video Link" class="mamba-input">
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="cta-button" onclick="submitNewVideo()">SAVE</button>
+                <button class="cta-button" style="border-color: #444; color: #aaa;" onclick="toggleAddModal(false)">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
