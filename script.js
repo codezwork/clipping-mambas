@@ -575,7 +575,7 @@ function renderPasswords() {
         profileInfo.style.flex = '1';
         
         const profileName = document.createElement('span');
-        profileName.textContent = `${profileData.profile} : ${profileData.profileName || 'Not set'} - `;
+        profileName.textContent = `${profileData.profileName || 'Not set'} :- `;
         profileName.style.color = '#fff';
         profileName.style.fontSize = '14px';
         
