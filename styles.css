@@ -1070,3 +1070,121 @@ select.mamba-input {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+
+
+/* Passwords Button Styling */
+#passwords-btn {
+    background: transparent !important;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #333;
+    color: #666;
+}
+
+#passwords-btn:hover {
+    background: rgba(255, 68, 68, 0.1) !important;
+    border-color: #ff4444 !important;
+    color: #ff4444 !important;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 5px 15px rgba(255, 68, 68, 0.2);
+}
+
+#passwords-btn:active {
+    transform: scale(0.95);
+    background: rgba(255, 68, 68, 0.2) !important;
+    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
+}
+
+/* Adjust nav-dots spacing */
+.nav-dots {
+    display: flex;
+    gap: 10px; /* Increased gap */
+}
+
+/* Passwords modal specific styles */
+#passwords-container {
+    scrollbar-width: thin;
+    scrollbar-color: #ff4444 #1a1a1a;
+}
+
+#passwords-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+#passwords-container::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 3px;
+}
+
+#passwords-container::-webkit-scrollbar-thumb {
+    background-color: #ff4444;
+    border-radius: 3px;
+}
+
+/* Password entry styling */
+.password-entry {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border: 1px solid #222;
+    transition: all 0.3s ease;
+}
+
+.password-entry:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #333;
+}
+
+.platform-logo {
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.password-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-label {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.password-text {
+    color: #aaa;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.copy-password-btn {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    color: #ff4444;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.copy-password-btn:hover {
+    background: rgba(255, 68, 68, 0.2);
+    transform: translateY(-1px);
+}
+
+.copy-password-btn:active {
+    transform: scale(0.98);
+}
