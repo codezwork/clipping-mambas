@@ -7,6 +7,7 @@ let currentUser = "";
 let currentPlatform = "Instagram"; // Default
 let isLoading = false;
 let profileConfig = {};
+let passwordsData = {};
 
 // --- DEBOUNCE UTILITY ---
 let debounceTimer;
@@ -115,19 +116,20 @@ function switchPlatform(platform, element) {
 
 // --- DATA HANDLING ---
 async function fetchData() {
-    showLoading(true);
-    try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const result = await response.json();
-        appData = result.videos || [];
-        profileConfig = result.profileConfig || {};
-        renderDashboard();
-    } catch (error) {
-        showToast('Error loading data. Check internet connection.', 'error');
-        console.error('Fetch error:', error);
-    }
-    showLoading(false);
+  showLoading(true);
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json();
+    appData = result.videos || [];
+    profileConfig = result.profileConfig || {};
+    passwordsData = result.passwords || {}; // Store passwords data
+    renderDashboard();
+  } catch (error) {
+    showToast('Error loading data. Check internet connection.', 'error');
+    console.error('Fetch error:', error);
+  }
+  showLoading(false);
 }
 
 // Helper function to get current profile names
@@ -483,4 +485,147 @@ function showLoading(show) {
         dot.style.boxShadow = "none";
         dot.innerHTML = "";
     }
+}
+
+//-- Function to get platform logo SVG --
+function getPlatformLogo(platform) {
+  if (platform === 'Instagram') {
+    return `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+        <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" 
+          stroke="#ff4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M3 16V8C3 5.23858 5.23858 3 8 3H16C18.7614 3 21 5.23858 21 8V16C21 18.7614 18.7614 21 16 21H8C5.23858 21 3 18.7614 3 16Z" 
+          stroke="#ff4444" stroke-width="1.5"/>
+        <path d="M17.5 6.51L17.51 6.49889" stroke="#ff4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+  } else if (platform === 'TikTok') {
+    return `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+        <path d="M21 8C19 8 17.5 6.5 17.5 4.5V4H15.5V12C15.5 15.03 13.03 17.5 10 17.5C6.97 17.5 4.5 15.03 4.5 12C4.5 8.97 6.97 6.5 10 6.5C10.5 6.5 11 6.6 11.5 6.7V4.7C11 4.5 10.5 4.5 10 4.5C5.86 4.5 2.5 7.86 2.5 12C2.5 16.14 5.86 19.5 10 19.5C14.14 19.5 17.5 16.14 17.5 12V8H21Z" 
+          fill="#ff4444"/>
+      </svg>
+    `;
+  }
+  return '';
+}
+
+// Add function to open passwords modal
+function openPasswordsModal() {
+  togglePasswordsModal(true);
+  renderPasswords();
+}
+
+// Add function to toggle passwords modal
+function togglePasswordsModal(show) {
+  const modal = document.getElementById('passwords-modal');
+  if (show) modal.classList.remove('hidden');
+  else modal.classList.add('hidden');
+}
+
+// Add function to render passwords
+function renderPasswords() {
+  const container = document.getElementById('passwords-container');
+  container.innerHTML = '';
+  
+  const users = ['Dikshansh', 'Aditya', 'Anurag'];
+  
+  users.forEach(user => {
+    if (!passwordsData[user]) return;
+    
+    // Create user section
+    const userSection = document.createElement('div');
+    userSection.style.marginBottom = '30px';
+    
+    const userHeader = document.createElement('h4');
+    userHeader.textContent = `User : ${user}`;
+    userHeader.style.color = '#ff4444';
+    userHeader.style.marginBottom = '15px';
+    userHeader.style.fontSize = '16px';
+    userHeader.style.borderBottom = '1px solid #333';
+    userHeader.style.paddingBottom = '5px';
+    
+    userSection.appendChild(userHeader);
+    
+    // Add platforms for this user
+    const platforms = ['Instagram', 'TikTok'];
+    
+    platforms.forEach(platform => {
+      if (!passwordsData[user][platform] || passwordsData[user][platform].length === 0) return;
+      
+      const platformProfiles = passwordsData[user][platform];
+      
+      platformProfiles.forEach(profileData => {
+        const profileDiv = document.createElement('div');
+        profileDiv.style.display = 'flex';
+        profileDiv.style.alignItems = 'center';
+        profileDiv.style.marginBottom = '12px';
+        profileDiv.style.padding = '10px';
+        profileDiv.style.background = 'rgba(255,255,255,0.02)';
+        profileDiv.style.borderRadius = '6px';
+        profileDiv.style.border = '1px solid #222';
+        
+        // Add platform logo
+        const logoDiv = document.createElement('div');
+        logoDiv.innerHTML = getPlatformLogo(platform);
+        profileDiv.appendChild(logoDiv);
+        
+        // Create profile info
+        const profileInfo = document.createElement('div');
+        profileInfo.style.flex = '1';
+        
+        const profileName = document.createElement('span');
+        profileName.textContent = `${profileData.profile} : ${profileData.profileName || 'Not set'} - `;
+        profileName.style.color = '#fff';
+        profileName.style.fontSize = '14px';
+        
+        const passwordSpan = document.createElement('span');
+        passwordSpan.textContent = profileData.password || 'No password';
+        passwordSpan.style.color = '#aaa';
+        passwordSpan.style.fontSize = '14px';
+        passwordSpan.style.fontFamily = 'monospace';
+        
+        profileInfo.appendChild(profileName);
+        profileInfo.appendChild(passwordSpan);
+        profileDiv.appendChild(profileInfo);
+        
+        // Add copy password button
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'icon-btn copy-btn';
+        copyBtn.style.marginLeft = '10px';
+        copyBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M16 12.9V17.1C16 20.6 14.6 22 11.1 22H6.9C3.4 22 2 20.6 2 17.1V12.9C2 9.4 3.4 8 6.9 8H11.1C14.6 8 16 9.4 16 12.9Z" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M22 6.9V11.1C22 14.6 20.6 16 17.1 16H16V12.9C16 9.4 14.6 8 11.1 8H8V6.9C8 3.4 9.4 2 12.9 2H17.1C20.6 2 22 3.4 22 6.9Z" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        `;
+        copyBtn.onclick = () => copyPassword(profileData.password);
+        profileDiv.appendChild(copyBtn);
+        
+        userSection.appendChild(profileDiv);
+      });
+    });
+    
+    container.appendChild(userSection);
+  });
+  
+  // If no passwords found
+  if (container.children.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: #666;">
+        <p>No passwords found in the database.</p>
+        <p style="font-size: 12px; margin-top: 10px;">Add passwords to the "Passwords" sheet in Google Sheets.</p>
+      </div>
+    `;
+  }
+}
+
+// Add function to copy password
+function copyPassword(password) {
+  if (!password) {
+    showToast('No password to copy', 'error');
+    return;
+  }
+  
+  copyLink(password); // Reuse existing copy function
 }
