@@ -1071,6 +1071,7 @@ select.mamba-input {
     to { transform: rotate(360deg); }
 }
 
+/* Add to styles.css */
 
 /* Passwords Button Styling */
 #passwords-btn {
@@ -1187,4 +1188,26 @@ select.mamba-input {
 
 .copy-password-btn:active {
     transform: scale(0.98);
+}
+
+/* PWA Specific Styles */
+.pwa-install-btn {
+    background: rgba(255, 68, 68, 0.05);
+    border-color: #ff4444;
+    color: #ff4444;
+    transition: all 0.3s ease;
+}
+
+.pwa-install-btn:hover {
+    background: #ff4444;
+    color: #121212;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+}
+
+.pwa-install-btn svg {
+    transition: stroke 0.3s ease;
+}
+
+.pwa-install-btn:hover svg {
+    stroke: #121212; /* Inverts icon color on hover */
 }

@@ -575,7 +575,7 @@ function renderPasswords() {
         profileInfo.style.flex = '1';
         
         const profileName = document.createElement('span');
-        profileName.textContent = `${profileData.profileName || 'Not set'} :- `;
+        profileName.textContent = `${profileData.profileName || 'Not set'} - `;
         profileName.style.color = '#fff';
         profileName.style.fontSize = '14px';
         
@@ -629,3 +629,59 @@ function copyPassword(password) {
   
   copyLink(password); // Reuse existing copy function
 }
+
+// --- PWA INSTALLATION LOGIC ---
+let deferredPrompt;
+
+// 1. Register Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+            .then(reg => console.log('Service Worker Registered'))
+            .catch(err => console.log('Service Worker Error:', err));
+    });
+}
+
+// 2. Listen for the 'beforeinstallprompt' event
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    
+    // Show the install buttons
+    const homeBtn = document.getElementById('install-container-home');
+    const settingsBtn = document.getElementById('install-container-settings');
+    
+    if(homeBtn) homeBtn.classList.remove('hidden');
+    if(settingsBtn) settingsBtn.classList.remove('hidden');
+});
+
+// 3. The Install Function triggered by the buttons
+async function installPWA() {
+    if (!deferredPrompt) return;
+
+    // Show the install prompt
+    deferredPrompt.prompt();
+
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+
+    // We've used the prompt, so clear it
+    deferredPrompt = null;
+    
+    // Optionally hide buttons after install
+    if(outcome === 'accepted'){
+        document.getElementById('install-container-home').classList.add('hidden');
+        document.getElementById('install-container-settings').classList.add('hidden');
+    }
+}
+
+// 4. Check if app is already installed
+window.addEventListener('appinstalled', () => {
+    console.log('Mamba Clips Tracker installed');
+    // Hide buttons just in case
+    document.getElementById('install-container-home').classList.add('hidden');
+    document.getElementById('install-container-settings').classList.add('hidden');
+});
