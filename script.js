@@ -1,5 +1,25 @@
+//
 // --- CONFIGURATION ---
-const API_URL = "https://script.google.com/macros/s/AKfycbyWEY0gzHGvjjzzEqpzGWxCLDiTaTWmUg5ylx1aCPnAMj6U-WS4fdHDcZPS5TlU2YJU/exec"; 
+// PASTE YOUR FIREBASE CONFIG HERE FROM CONSOLE
+// Import the functions you need from the SDKs you need
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDqI6yHiHJ7Ao257KmVaTSOPJ7C3hd9V7U",
+  authDomain: "mambaclippers.firebaseapp.com",
+  projectId: "mambaclippers",
+  storageBucket: "mambaclippers.firebasestorage.app",
+  messagingSenderId: "400915321062",
+  appId: "1:400915321062:web:8a8ee616725d40ea47eb27"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
 
 // --- STATE MANAGEMENT ---
 let appData = [];
@@ -8,6 +28,7 @@ let currentPlatform = "Instagram"; // Default
 let isLoading = false;
 let profileConfig = {};
 let passwordsData = {};
+let unsubscribeVideos = null;
 
 // --- DEBOUNCE UTILITY ---
 let debounceTimer;
@@ -20,11 +41,9 @@ function debounce(func, delay) {
 
 // --- TOAST NOTIFICATION SYSTEM ---
 function showToast(message, type = 'info') {
-    // Remove existing toast if any
     const existingToast = document.querySelector('.toast-notification');
     if (existingToast) existingToast.remove();
     
-    // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
     toast.innerHTML = `
@@ -35,7 +54,6 @@ function showToast(message, type = 'info') {
     
     document.body.appendChild(toast);
     
-    // Auto remove after 3 seconds
     setTimeout(() => {
         if (toast.parentElement) toast.remove();
     }, 3000);
@@ -43,44 +61,22 @@ function showToast(message, type = 'info') {
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Add toast styles dynamically
     const toastStyles = document.createElement('style');
     toastStyles.textContent = `
         .toast-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #1a1a1a;
-            border-left: 4px solid #ff4444;
-            border-radius: 4px;
-            padding: 12px 16px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            animation: slideIn 0.3s ease;
-            max-width: 320px;
+            position: fixed; top: 20px; right: 20px; background: #1a1a1a;
+            border-left: 4px solid #ff4444; border-radius: 4px; padding: 12px 16px;
+            color: white; display: flex; align-items: center; gap: 12px;
+            z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease; max-width: 320px;
         }
         .toast-success { border-color: #2ecc71; }
         .toast-error { border-color: #ff4444; }
         .toast-info { border-color: #3498db; }
         .toast-icon { font-size: 18px; }
         .toast-message { flex: 1; font-size: 14px; }
-        .toast-close {
-            background: none;
-            border: none;
-            color: #666;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 0;
-            line-height: 1;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
+        .toast-close { background: none; border: none; color: #666; font-size: 20px; cursor: pointer; padding: 0; line-height: 1; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     `;
     document.head.appendChild(toastStyles);
 });
@@ -90,49 +86,84 @@ function openDashboard(user) {
     currentUser = user;
     document.getElementById('current-user-name').innerText = user.toUpperCase();
     
-    // Switch Views
     document.getElementById('home-view').classList.add('hidden');
     document.getElementById('dashboard-view').classList.remove('hidden');
     document.getElementById('dashboard-view').classList.add('active');
 
-    fetchData(); // Load data from sheet
+    fetchData(); 
 }
 
 function goHome() {
     document.getElementById('dashboard-view').classList.add('hidden');
     document.getElementById('home-view').classList.remove('hidden');
-    appData = []; // Clear data
+    appData = [];
+    
+    if (unsubscribeVideos) {
+        unsubscribeVideos();
+        unsubscribeVideos = null;
+    }
 }
 
 function switchPlatform(platform, element) {
     currentPlatform = platform;
-    
-    // Update Tabs UI
     document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
     element.classList.add('active');
-
     renderDashboard();
 }
 
-// --- DATA HANDLING ---
+// --- DATA HANDLING (FIRESTORE) ---
 async function fetchData() {
   showLoading(true);
   try {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.json();
-    appData = result.videos || [];
-    profileConfig = result.profileConfig || {};
-    passwordsData = result.passwords || {}; // Store passwords data
-    renderDashboard();
+    // 1. Fetch Profile Config (from global settings)
+    // We still keep profileConfig in settings/global as it's small metadata
+    const settingsDoc = await db.collection('settings').doc('global').get();
+    if (settingsDoc.exists) {
+        profileConfig = settingsDoc.data().profileConfig || {};
+    }
+
+    // 2. Fetch Passwords from NEW Collection "passwords log"
+    const passwordsSnapshot = await db.collection('passwords log').get();
+    passwordsData = {};
+    passwordsSnapshot.forEach(doc => {
+        // The document ID is the User Name (e.g., "Dikshansh")
+        // The data inside contains keys like "Instagram", "TikTok"
+        passwordsData[doc.id] = doc.data();
+    });
+
+    // 3. Real-time listener for Videos
+    if (unsubscribeVideos) unsubscribeVideos();
+
+    unsubscribeVideos = db.collection('videos')
+        .where('person', '==', currentUser)
+        .onSnapshot((snapshot) => {
+            appData = [];
+            snapshot.forEach((doc) => {
+                // We attach the doc.id internally so we can update/delete later
+                // But we do NOT save it back to the database as a field
+                appData.push({ ...doc.data(), id: doc.id });
+            });
+            
+            // Sort by logic: Since 'createdAt' is gone, we rely on the Firestore
+            // implicit ordering or simple array order. 
+            // We can reverse it so the newest added (usually last in array) appears top
+            // appData.reverse(); 
+
+            renderDashboard();
+            showLoading(false);
+        }, (error) => {
+            console.error("Firestore Error:", error);
+            showToast('Error syncing data.', 'error');
+            showLoading(false);
+        });
+
   } catch (error) {
-    showToast('Error loading data. Check internet connection.', 'error');
+    showToast('Error loading data.', 'error');
     console.error('Fetch error:', error);
+    showLoading(false);
   }
-  showLoading(false);
 }
 
-// Helper function to get current profile names
 function getCurrentProfileNames() {
     if (profileConfig[currentUser] && profileConfig[currentUser][currentPlatform]) {
         const config = profileConfig[currentUser][currentPlatform];
@@ -145,7 +176,6 @@ function getCurrentProfileNames() {
     return ["Profile 1", "Profile 2", "Profile 3"];
 }
 
-// Function to update the dropdown in add modal
 function updateProfileDropdown() {
     const select = document.getElementById('new-profile-select');
     if (!select) return;
@@ -155,7 +185,7 @@ function updateProfileDropdown() {
     
     profileNames.forEach((name, index) => {
         const option = document.createElement('option');
-        option.value = `Profile ${index + 1}`; // Keep the original value for backend
+        option.value = `Profile ${index + 1}`; 
         option.textContent = name;
         select.appendChild(option);
     });
@@ -165,15 +195,9 @@ function renderDashboard() {
     const container = document.getElementById('profiles-container');
     container.innerHTML = "";
 
-    // Get profile names for current user and platform
     const profileNames = getCurrentProfileNames();
-    
-    // Filter Data for Current User & Platform
-    const filteredData = appData.filter(item => 
-        item.person === currentUser && item.platform === currentPlatform
-    );
+    const filteredData = appData.filter(item => item.platform === currentPlatform);
 
-    // Group by Profile Name (using the original Profile 1/2/3 as keys)
     const grouped = {};
     ["Profile 1", "Profile 2", "Profile 3"].forEach(p => grouped[p] = []);
     
@@ -183,17 +207,14 @@ function renderDashboard() {
         }
     });
 
-    // Render Each Profile Section with dynamic names
     ["Profile 1", "Profile 2", "Profile 3"].forEach((profileKey, index) => {
         const videos = grouped[profileKey];
         const displayName = profileNames[index];
         
-        // Calculate Progress
         const total = videos.length;
-        const uploaded = videos.filter(v => v.status === "Uploaded").length;
-        const progressPct = total === 0 ? 0 : (uploaded / total) * 100;
+        const approved = videos.filter(v => v.status === "Approved").length;
+        const progressPct = total === 0 ? 0 : (approved / total) * 100;
 
-        // Create HTML Section
         const section = document.createElement('div');
         section.className = 'profile-section';
         
@@ -209,7 +230,7 @@ function renderDashboard() {
                         </svg>
                     </button>
                 </div>
-                <span style="color:#666; font-size: 12px;">${uploaded}/${total} Uploaded</span>
+                <span style="color:#666; font-size: 12px;">${approved}/${total} Approved</span>
             </div>
             <div class="progress-track">
                 <div class="progress-fill" style="width: ${progressPct}%"></div>
@@ -222,13 +243,13 @@ function renderDashboard() {
         container.appendChild(section);
     });
     
-    // Update the dropdown in add modal
     updateProfileDropdown();
 }
 
 function createVideoRow(video) {
-    const isUploaded = video.status === "Uploaded";
-    const statusClass = isUploaded ? 'status-uploaded' : 'status-reviewed';
+    const isApproved = video.status === "Approved";
+    // This class determines the color (Green for Approved, Orange for Pending)
+    const statusClass = isApproved ? 'status-approved' : 'status-pending';
     
     return `
         <div class="video-item">
@@ -256,38 +277,22 @@ function createVideoRow(video) {
     `;
 }
 
-// --- DEBOUNCED ACTIONS ---
+// --- ACTIONS (CRUD) ---
 const debouncedToggleStatus = debounce(async function(id, currentStatus) {
-    const newStatus = currentStatus === "Uploaded" ? "Reviewed" : "Uploaded";
+    // Toggles between Pending and Approved
+    const newStatus = currentStatus === "Approved" ? "Pending" : "Approved";
     
-    // Optimistic Update
-    const videoIndex = appData.findIndex(v => String(v.id) === String(id));
-    if(videoIndex > -1) {
-        appData[videoIndex].status = newStatus;
-        renderDashboard();
-        showToast(`Status changed to ${newStatus}`, 'success');
-    }
-
     try {
-        await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({
-                action: "updateStatus",
-                id: id,
-                newStatus: newStatus
-            })
+        await db.collection('videos').doc(id).update({
+            status: newStatus
         });
+        showToast(`Status updated to ${newStatus}`, 'success');
     } catch (error) {
         showToast('Failed to update status', 'error');
-        // Revert optimistic update on error
-        if(videoIndex > -1) {
-            appData[videoIndex].status = currentStatus;
-            renderDashboard();
-        }
+        console.error(error);
     }
 }, 300);
 
-// --- ACTIONS (CRUD) ---
 async function submitNewVideo() {
     const profile = document.getElementById('new-profile-select').value;
     const title = document.getElementById('new-title').value.trim();
@@ -302,68 +307,36 @@ async function submitNewVideo() {
     showLoading(true);
 
     const newVideo = {
-        action: "create",
-        id: Date.now().toString(),
+        // CLEAN DATA: id and createdAt are REMOVED as requested.
         person: currentUser,
         platform: currentPlatform,
         profile: profile,
         title: title,
-        link: link
+        link: link,
+        status: "Pending" // Default status
     };
 
-    // Optimistic Update
-    appData.push({...newVideo, status: "Reviewed"});
-    renderDashboard();
-
     try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify(newVideo)
-        });
-        
-        if (!response.ok) throw new Error('Failed to save');
-        
+        await db.collection('videos').add(newVideo);
         showToast('Video added successfully!', 'success');
         document.getElementById('new-title').value = "";
         document.getElementById('new-link').value = "";
     } catch (error) {
         showToast('Failed to save video', 'error');
-        // Remove from local data on error
-        appData = appData.filter(v => v.id !== newVideo.id);
-        renderDashboard();
+        console.error(error);
     }
-
     showLoading(false);
 }
 
 async function deleteVideo(id) {
     if(!confirm("Are you sure you want to delete this video?")) return;
 
-    // Store video for rollback
-    const deletedVideo = appData.find(v => String(v.id) === String(id));
-    
-    // Optimistic Update
-    appData = appData.filter(v => String(v.id) !== String(id));
-    renderDashboard();
-
     try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify({
-                action: "delete",
-                id: id
-            })
-        });
-        
-        if (!response.ok) throw new Error('Failed to delete');
+        await db.collection('videos').doc(id).delete();
         showToast('Video deleted', 'success');
     } catch (error) {
         showToast('Failed to delete video', 'error');
-        // Rollback on error
-        if (deletedVideo) {
-            appData.push(deletedVideo);
-            renderDashboard();
-        }
+        console.error(error);
     }
 }
 
@@ -372,14 +345,12 @@ function openProfileSettings(profileIndex = null) {
     const modal = document.getElementById('profile-settings-modal');
     const profileNames = getCurrentProfileNames();
     
-    // Fill the input fields with current names
     document.getElementById('profile-name-1').value = profileNames[0];
     document.getElementById('profile-name-2').value = profileNames[1];
     document.getElementById('profile-name-3').value = profileNames[2];
     
     modal.classList.remove('hidden');
     
-    // Focus on specific profile if index provided
     if (profileIndex !== null) {
         setTimeout(() => {
             document.getElementById(`profile-name-${profileIndex + 1}`).focus();
@@ -398,7 +369,6 @@ async function saveProfileNames() {
     const profile2 = document.getElementById('profile-name-2').value.trim();
     const profile3 = document.getElementById('profile-name-3').value.trim();
     
-    // Validate names
     if (!profile1 || !profile2 || !profile3) {
         showToast('All profile names are required', 'error');
         return;
@@ -406,42 +376,38 @@ async function saveProfileNames() {
     
     showLoading(true);
     
-    const profileData = {
-        action: "updateProfileNames",
-        user: currentUser,
-        platform: currentPlatform,
-        profileNames: {
-            profile1: profile1,
-            profile2: profile2,
-            profile3: profile3
-        }
-    };
-    
     try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify(profileData)
+        const updateField = `profileConfig.${currentUser}.${currentPlatform}`;
+        
+        await db.collection('settings').doc('global').update({
+            [`${updateField}.profile1`]: profile1,
+            [`${updateField}.profile2`]: profile2,
+            [`${updateField}.profile3`]: profile3
         });
         
-        if (!response.ok) throw new Error('Failed to save');
-        
-        // Update local config
         if (!profileConfig[currentUser]) profileConfig[currentUser] = {};
-        profileConfig[currentUser][currentPlatform] = {
-            profile1: profile1,
-            profile2: profile2,
-            profile3: profile3
-        };
+        profileConfig[currentUser][currentPlatform] = { profile1, profile2, profile3 };
         
-        // Re-render dashboard with new names
         renderDashboard();
-        
         showToast('Profile names updated!', 'success');
         toggleProfileSettingsModal(false);
         
     } catch (error) {
-        showToast('Failed to update profile names', 'error');
-        console.error('Error saving profile names:', error);
+        if (error.code === 'not-found') {
+            await db.collection('settings').doc('global').set({
+                 profileConfig: {
+                     [currentUser]: {
+                         [currentPlatform]: { profile1, profile2, profile3 }
+                     }
+                 }
+            }, { merge: true });
+            renderDashboard();
+            showToast('Profile names updated!', 'success');
+            toggleProfileSettingsModal(false);
+        } else {
+            showToast('Failed to update profile names', 'error');
+            console.error('Error saving profile names:', error);
+        }
     }
     
     showLoading(false);
@@ -468,18 +434,7 @@ function showLoading(show) {
     if(show) {
         dot.style.background = "#ff4444";
         dot.style.boxShadow = "0 0 10px #ff4444";
-        dot.innerHTML = `
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2V6" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-                <path d="M12 18V22" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-                <path d="M4.93 4.93L7.76 7.76" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-                <path d="M16.24 16.24L19.07 19.07" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-                <path d="M2 12H6" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-                <path d="M18 12H22" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-                <path d="M4.93 19.07L7.76 16.24" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-                <path d="M16.24 7.76L19.07 4.93" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-        `;
+        dot.innerHTML = `<svg width="8" height="8" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#ff4444" stroke-width="4" stroke-dasharray="30" stroke-dashoffset="30"></circle></svg>`;
     } else {
         dot.style.background = "transparent";
         dot.style.boxShadow = "none";
@@ -487,53 +442,55 @@ function showLoading(show) {
     }
 }
 
-//-- Function to get platform logo SVG --
 function getPlatformLogo(platform) {
   if (platform === 'Instagram') {
     return `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
-        <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" 
-          stroke="#ff4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M3 16V8C3 5.23858 5.23858 3 8 3H16C18.7614 3 21 5.23858 21 8V16C21 18.7614 18.7614 21 16 21H8C5.23858 21 3 18.7614 3 16Z" 
-          stroke="#ff4444" stroke-width="1.5"/>
-        <path d="M17.5 6.51L17.51 6.49889" stroke="#ff4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
       </svg>
     `;
   } else if (platform === 'TikTok') {
     return `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
-        <path d="M21 8C19 8 17.5 6.5 17.5 4.5V4H15.5V12C15.5 15.03 13.03 17.5 10 17.5C6.97 17.5 4.5 15.03 4.5 12C4.5 8.97 6.97 6.5 10 6.5C10.5 6.5 11 6.6 11.5 6.7V4.7C11 4.5 10.5 4.5 10 4.5C5.86 4.5 2.5 7.86 2.5 12C2.5 16.14 5.86 19.5 10 19.5C14.14 19.5 17.5 16.14 17.5 12V8H21Z" 
-          fill="#ff4444"/>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="margin-right: 8px;">
+        <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" stroke="#ff4444" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `;
   }
   return '';
 }
 
-// Add function to open passwords modal
+// --- PASSWORD MANAGEMENT ---
 function openPasswordsModal() {
   togglePasswordsModal(true);
   renderPasswords();
 }
 
-// Add function to toggle passwords modal
 function togglePasswordsModal(show) {
   const modal = document.getElementById('passwords-modal');
   if (show) modal.classList.remove('hidden');
   else modal.classList.add('hidden');
 }
 
-// Add function to render passwords
 function renderPasswords() {
   const container = document.getElementById('passwords-container');
   container.innerHTML = '';
   
-  const users = ['Dikshansh', 'Aditya', 'Anurag'];
+  // Note: Since we fetch from collection, we iterate the DATA we fetched
+  // passwordsData keys are now the document IDs (User Names)
+  const users = Object.keys(passwordsData);
   
+  if (users.length === 0) {
+      container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: #666;">
+        <p>No passwords found.</p>
+        <p style="font-size: 12px; margin-top: 10px;">Check 'passwords log' collection.</p>
+      </div>`;
+      return;
+  }
+
   users.forEach(user => {
-    if (!passwordsData[user]) return;
-    
-    // Create user section
     const userSection = document.createElement('div');
     userSection.style.marginBottom = '30px';
     
@@ -547,58 +504,46 @@ function renderPasswords() {
     
     userSection.appendChild(userHeader);
     
-    // Add platforms for this user
     const platforms = ['Instagram', 'TikTok'];
     
     platforms.forEach(platform => {
+      // Check if this user has data for this platform
       if (!passwordsData[user][platform] || passwordsData[user][platform].length === 0) return;
       
       const platformProfiles = passwordsData[user][platform];
       
       platformProfiles.forEach(profileData => {
         const profileDiv = document.createElement('div');
-        profileDiv.style.display = 'flex';
-        profileDiv.style.alignItems = 'center';
-        profileDiv.style.marginBottom = '12px';
-        profileDiv.style.padding = '10px';
-        profileDiv.style.background = 'rgba(255,255,255,0.02)';
-        profileDiv.style.borderRadius = '6px';
-        profileDiv.style.border = '1px solid #222';
+        profileDiv.className = 'password-entry';
         
-        // Add platform logo
         const logoDiv = document.createElement('div');
+        logoDiv.className = 'platform-logo';
         logoDiv.innerHTML = getPlatformLogo(platform);
         profileDiv.appendChild(logoDiv);
         
-        // Create profile info
         const profileInfo = document.createElement('div');
-        profileInfo.style.flex = '1';
+        profileInfo.className = 'password-info';
         
         const profileName = document.createElement('span');
-        profileName.textContent = `${profileData.profileName || 'Not set'} - `;
-        profileName.style.color = '#fff';
-        profileName.style.fontSize = '14px';
+        profileName.className = 'profile-label';
+        profileName.textContent = `${profileData.profileName || 'Not set'}`;
         
+        const sep = document.createElement('span');
+        sep.innerText = " - ";
+        sep.style.color = "#666";
+
         const passwordSpan = document.createElement('span');
-        passwordSpan.textContent = profileData.password || 'No password';
-        passwordSpan.style.color = '#aaa';
-        passwordSpan.style.fontSize = '14px';
-        passwordSpan.style.fontFamily = 'monospace';
+        passwordSpan.className = 'password-text';
+        passwordSpan.textContent = profileData.password || '******';
         
         profileInfo.appendChild(profileName);
+        profileInfo.appendChild(sep);
         profileInfo.appendChild(passwordSpan);
         profileDiv.appendChild(profileInfo);
         
-        // Add copy password button
         const copyBtn = document.createElement('button');
-        copyBtn.className = 'icon-btn copy-btn';
-        copyBtn.style.marginLeft = '10px';
-        copyBtn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M16 12.9V17.1C16 20.6 14.6 22 11.1 22H6.9C3.4 22 2 20.6 2 17.1V12.9C2 9.4 3.4 8 6.9 8H11.1C14.6 8 16 9.4 16 12.9Z" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M22 6.9V11.1C22 14.6 20.6 16 17.1 16H16V12.9C16 9.4 14.6 8 11.1 8H8V6.9C8 3.4 9.4 2 12.9 2H17.1C20.6 2 22 3.4 22 6.9Z" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-        `;
+        copyBtn.className = 'copy-password-btn';
+        copyBtn.innerText = "COPY";
         copyBtn.onclick = () => copyPassword(profileData.password);
         profileDiv.appendChild(copyBtn);
         
@@ -608,32 +553,19 @@ function renderPasswords() {
     
     container.appendChild(userSection);
   });
-  
-  // If no passwords found
-  if (container.children.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px 20px; color: #666;">
-        <p>No passwords found in the database.</p>
-        <p style="font-size: 12px; margin-top: 10px;">Add passwords to the "Passwords" sheet in Google Sheets.</p>
-      </div>
-    `;
-  }
 }
 
-// Add function to copy password
 function copyPassword(password) {
   if (!password) {
     showToast('No password to copy', 'error');
     return;
   }
-  
-  copyLink(password); // Reuse existing copy function
+  copyLink(password);
 }
 
 // --- PWA INSTALLATION LOGIC ---
 let deferredPrompt;
 
-// 1. Register Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js')
@@ -642,14 +574,10 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// 2. Listen for the 'beforeinstallprompt' event
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent Chrome 67 and earlier from automatically showing the prompt
     e.preventDefault();
-    // Stash the event so it can be triggered later.
     deferredPrompt = e;
     
-    // Show the install buttons
     const homeBtn = document.getElementById('install-container-home');
     const settingsBtn = document.getElementById('install-container-settings');
     
@@ -657,31 +585,20 @@ window.addEventListener('beforeinstallprompt', (e) => {
     if(settingsBtn) settingsBtn.classList.remove('hidden');
 });
 
-// 3. The Install Function triggered by the buttons
 async function installPWA() {
     if (!deferredPrompt) return;
-
-    // Show the install prompt
     deferredPrompt.prompt();
-
-    // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
-
-    // We've used the prompt, so clear it
+    console.log(`User response: ${outcome}`);
     deferredPrompt = null;
     
-    // Optionally hide buttons after install
     if(outcome === 'accepted'){
         document.getElementById('install-container-home').classList.add('hidden');
         document.getElementById('install-container-settings').classList.add('hidden');
     }
 }
 
-// 4. Check if app is already installed
 window.addEventListener('appinstalled', () => {
-    console.log('Mamba Clips Tracker installed');
-    // Hide buttons just in case
     document.getElementById('install-container-home').classList.add('hidden');
     document.getElementById('install-container-settings').classList.add('hidden');
 });
