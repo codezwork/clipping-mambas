@@ -1,4 +1,4 @@
-/* - CLEANED VERSION */
+/* - FINAL CORRECTED VERSION */
 
 /* ==========================================================================
    GLOBAL & RESET STYLES
@@ -15,7 +15,6 @@ body {
   color: #ffffff;
   line-height: 1.6;
   overflow-x: hidden;
-  /* Prevent pull-to-refresh on mobile if desired */
   overscroll-behavior-y: none; 
 }
 
@@ -180,7 +179,7 @@ body {
 
 .progress-fill {
     height: 100%;
-    background: #2ecc71; /* Changed to match Approved color */
+    background: #2ecc71; 
     transition: width 0.5s ease;
 }
 
@@ -335,7 +334,6 @@ body {
     animation: slideUp 0.3s ease forwards;
 }
 
-/* Reusing your old class name for modal styling consistency */
 .testimonial-card h3 { margin-bottom: 20px; font-size: 18px; }
 
 @keyframes fadeIn { to { opacity: 1; } }
@@ -369,7 +367,6 @@ select.mamba-input {
     max-height: 50vh;
     overflow-y: auto;
     padding-right: 5px;
-    /* Scrollbar styling */
     scrollbar-width: thin;
     scrollbar-color: #ff4444 #1a1a1a;
 }
@@ -388,6 +385,31 @@ select.mamba-input {
 .password-info { flex: 1; font-size: 14px; }
 .profile-label { color: #fff; font-weight: 500; }
 .password-text { color: #aaa; font-family: monospace; margin-left: 5px; }
+
+/* === [RESTORED] COPY BUTTON STYLES === */
+.copy-password-btn {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    color: #ff4444;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.copy-password-btn:hover {
+    background: rgba(255, 68, 68, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.2);
+}
+
+.copy-password-btn:active {
+    transform: scale(0.98);
+}
+
 
 /* ==========================================================================
    PWA INSTALL BUTTON
