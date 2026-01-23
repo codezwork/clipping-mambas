@@ -79,6 +79,15 @@ document.addEventListener('DOMContentLoaded', () => {
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     `;
     document.head.appendChild(toastStyles);
+
+    // Global listener to close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.dropdown-container')) {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        }
+    });
 });
 
 // --- NAVIGATION FUNCTIONS ---
@@ -116,18 +125,15 @@ async function fetchData() {
   showLoading(true);
   try {
     // 1. Fetch Profile Config (from global settings)
-    // We still keep profileConfig in settings/global as it's small metadata
     const settingsDoc = await db.collection('settings').doc('global').get();
     if (settingsDoc.exists) {
         profileConfig = settingsDoc.data().profileConfig || {};
     }
 
-    // 2. Fetch Passwords from NEW Collection "passwords log"
+    // 2. Fetch Passwords
     const passwordsSnapshot = await db.collection('passwords log').get();
     passwordsData = {};
     passwordsSnapshot.forEach(doc => {
-        // The document ID is the User Name (e.g., "Dikshansh")
-        // The data inside contains keys like "Instagram", "TikTok"
         passwordsData[doc.id] = doc.data();
     });
 
@@ -139,16 +145,8 @@ async function fetchData() {
         .onSnapshot((snapshot) => {
             appData = [];
             snapshot.forEach((doc) => {
-                // We attach the doc.id internally so we can update/delete later
-                // But we do NOT save it back to the database as a field
                 appData.push({ ...doc.data(), id: doc.id });
             });
-            
-            // Sort by logic: Since 'createdAt' is gone, we rely on the Firestore
-            // implicit ordering or simple array order. 
-            // We can reverse it so the newest added (usually last in array) appears top
-            // appData.reverse(); 
-
             renderDashboard();
             showLoading(false);
         }, (error) => {
@@ -248,8 +246,12 @@ function renderDashboard() {
 
 function createVideoRow(video) {
     const isApproved = video.status === "Approved";
-    // This class determines the color (Green for Approved, Orange for Pending)
-    const statusClass = isApproved ? 'status-approved' : 'status-pending';
+    const isRejected = video.status === "Rejected";
+    
+    // Class determination
+    let statusClass = 'status-pending';
+    if (isApproved) statusClass = 'status-approved';
+    if (isRejected) statusClass = 'status-rejected';
     
     return `
         <div class="video-item">
@@ -261,26 +263,92 @@ function createVideoRow(video) {
                 <div class="status-badge ${statusClass}" onclick="debouncedToggleStatus('${video.id}', '${video.status}')">
                     ${video.status}
                 </div>
+
                 <button class="icon-btn copy-btn" onclick="copyLink('${video.link}')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                         <path d="M16 12.9V17.1C16 20.6 14.6 22 11.1 22H6.9C3.4 22 2 20.6 2 17.1V12.9C2 9.4 3.4 8 6.9 8H11.1C14.6 8 16 9.4 16 12.9Z" stroke="currentColor" stroke-width="1.5"/>
                         <path d="M22 6.9V11.1C22 14.6 20.6 16 17.1 16H16V12.9C16 9.4 14.6 8 11.1 8H8V6.9C8 3.4 9.4 2 12.9 2H17.1C20.6 2 22 3.4 22 6.9Z" stroke="currentColor" stroke-width="1.5"/>
                     </svg>
                 </button>
-                <button class="icon-btn delete-btn" onclick="deleteVideo('${video.id}')">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 5.98C17.67 5.65 14.32 5.48 10.98 5.48C9 5.48 7.02 5.58 5.04 5.78L3 5.98M8.5 4.97L8.72 3.66C8.88 2.71 9 2 10.69 2H13.31C15 2 15.13 2.75 15.28 3.67L15.5 4.97M18.85 9.14L18.2 19.21C18.09 20.78 18 22 15.21 22H8.79C6 22 5.91 20.78 5.8 19.21L5.15 9.14M10.33 16.5H13.66M9.5 12.5H14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
+
+                <div class="dropdown-container">
+                    <button class="icon-btn delete-btn" onclick="toggleDropdown('${video.id}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M3 7H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <path d="M3 12H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <path d="M3 17H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    
+                    <div id="dropdown-${video.id}" class="dropdown-menu hidden">
+                         <div class="dropdown-item item-rejected" onclick="markAsRejected('${video.id}')">
+                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                             </svg>
+                             Rejected
+                         </div>
+                         <div class="dropdown-item item-delete" onclick="deleteVideo('${video.id}')">
+                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                             </svg>
+                             Delete
+                         </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     `;
 }
 
 // --- ACTIONS (CRUD) ---
+
+// Toggle Dropdown Visibility
+function toggleDropdown(id) {
+    // Close all other open dropdowns first
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        if(menu.id !== `dropdown-${id}`) menu.classList.add('hidden');
+    });
+
+    const menu = document.getElementById(`dropdown-${id}`);
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+}
+
+// Mark as Rejected
+async function markAsRejected(id) {
+    try {
+        await db.collection('videos').doc(id).update({
+            status: "Rejected"
+        });
+        showToast('Status updated to Rejected', 'info');
+    } catch (error) {
+        showToast('Failed to update status', 'error');
+        console.error(error);
+    }
+    // Close dropdown immediately
+    const menu = document.getElementById(`dropdown-${id}`);
+    if(menu) menu.classList.add('hidden');
+}
+
 const debouncedToggleStatus = debounce(async function(id, currentStatus) {
-    // Toggles between Pending and Approved
-    const newStatus = currentStatus === "Approved" ? "Pending" : "Approved";
+    // Logic: 
+    // If "Approved" -> go to "Pending"
+    // If "Pending" -> go to "Approved"
+    // If "Rejected" -> go to "Approved" (as per user request: "when clicked it will turn the status 'Approved'")
+    
+    let newStatus = "Approved";
+    
+    if (currentStatus === "Approved") {
+        newStatus = "Pending";
+    } else if (currentStatus === "Pending") {
+        newStatus = "Approved";
+    } else if (currentStatus === "Rejected") {
+        newStatus = "Approved";
+    }
     
     try {
         await db.collection('videos').doc(id).update({
@@ -307,7 +375,6 @@ async function submitNewVideo() {
     showLoading(true);
 
     const newVideo = {
-        // CLEAN DATA: id and createdAt are REMOVED as requested.
         person: currentUser,
         platform: currentPlatform,
         profile: profile,
@@ -477,8 +544,6 @@ function renderPasswords() {
   const container = document.getElementById('passwords-container');
   container.innerHTML = '';
   
-  // Note: Since we fetch from collection, we iterate the DATA we fetched
-  // passwordsData keys are now the document IDs (User Names)
   const users = Object.keys(passwordsData);
   
   if (users.length === 0) {
@@ -507,7 +572,6 @@ function renderPasswords() {
     const platforms = ['Instagram', 'TikTok'];
     
     platforms.forEach(platform => {
-      // Check if this user has data for this platform
       if (!passwordsData[user][platform] || passwordsData[user][platform].length === 0) return;
       
       const platformProfiles = passwordsData[user][platform];
