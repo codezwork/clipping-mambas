@@ -24,7 +24,7 @@ const db = firebase.firestore();
 // --- STATE MANAGEMENT ---
 let appData = [];
 let currentUser = "";
-let currentPlatform = "TikTok"; // Default
+let currentPlatform = "TikTok"; // UPDATED: Changed Default to TikTok
 let isLoading = false;
 let profileConfig = {};
 let passwordsData = {};
