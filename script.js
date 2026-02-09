@@ -1,11 +1,6 @@
 //
 // --- CONFIGURATION ---
 // PASTE YOUR FIREBASE CONFIG HERE FROM CONSOLE
-// Import the functions you need from the SDKs you need
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDqI6yHiHJ7Ao257KmVaTSOPJ7C3hd9V7U",
   authDomain: "mambaclippers.firebaseapp.com",
@@ -14,6 +9,10 @@ const firebaseConfig = {
   messagingSenderId: "400915321062",
   appId: "1:400915321062:web:8a8ee616725d40ea47eb27"
 };
+
+// --- BACKEND URL ---
+// REPLACE THIS WITH YOUR ACTUAL RENDER URL AFTER DEPLOYING
+const BACKEND_URL = "https://mamba-clippers-backend-views-scrapper.onrender.com/refresh-stats";
 
 // Initialize Firebase
 if (!firebase.apps.length) {
@@ -24,7 +23,7 @@ const db = firebase.firestore();
 // --- STATE MANAGEMENT ---
 let appData = [];
 let currentUser = "";
-let currentPlatform = "TikTok"; // UPDATED: Changed Default to TikTok
+let currentPlatform = "TikTok"; 
 let isLoading = false;
 let profileConfig = {};
 let passwordsData = {};
@@ -253,11 +252,27 @@ function createVideoRow(video) {
     if (isApproved) statusClass = 'status-approved';
     if (isRejected) statusClass = 'status-rejected';
     
+    // Format views: 1200 -> 1.2K
+    const formatViews = (n) => {
+        if (!n) return '0';
+        if (n < 1000) return n;
+        if (n < 1000000) return (n / 1000).toFixed(1) + 'K';
+        return (n / 1000000).toFixed(1) + 'M';
+    };
+
+    const viewsDisplay = video.views !== undefined 
+        ? `<span class="view-count">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+             ${formatViews(video.views)}
+           </span>`
+        : '';
+
     return `
         <div class="video-item">
             <div class="video-info">
                 <h4>${video.title}</h4>
                 <a href="${video.link}" target="_blank">Watch Video &#8599;</a>
+                ${viewsDisplay}
             </div>
             <div class="video-actions">
                 <div class="status-badge ${statusClass}" onclick="debouncedToggleStatus('${video.id}', '${video.status}')">
@@ -301,6 +316,84 @@ function createVideoRow(video) {
             </div>
         </div>
     `;
+}
+
+// --- REFRESH STATS FUNCTION (NEW) ---
+// --- REVISED REFRESH STATS FUNCTION (ONE-BY-ONE) ---
+async function refreshStats() {
+    const btn = document.getElementById('refresh-btn');
+    const btnText = btn.querySelector('span');
+    const originalText = btnText.innerText;
+    
+    // 1. Get List of Videos to Update
+    // We filter for videos that belong to the current user and have a link
+    const videosToUpdate = appData.filter(v => v.link && v.link.startsWith('http'));
+
+    if (videosToUpdate.length === 0) {
+        showToast("No videos found to update.", "info");
+        return;
+    }
+
+    // 2. Enter Loading State
+    btn.classList.add('refresh-loading');
+    btn.disabled = true;
+    
+    let successCount = 0;
+    let failCount = 0;
+
+    // 3. Loop through videos one by one
+    // We use a regular for...of loop to ensure they happen in order (Sequential)
+    // This prevents overwhelming the server or getting rate-limited
+    for (let i = 0; i < videosToUpdate.length; i++) {
+        const video = videosToUpdate[i];
+        
+        // Update Button Text with Progress
+        btnText.innerText = `Checking ${i + 1}/${videosToUpdate.length}...`;
+
+        try {
+            // Updated Endpoint: /check-video
+            // Note: Make sure BACKEND_URL points to the root, or adjust this line
+            // If BACKEND_URL is "https://.../refresh-stats", change it to just "https://...onrender.com"
+            // Or just hardcode the new endpoint here:
+            
+            const rootUrl = BACKEND_URL.replace('/refresh-stats', ''); // simple cleanup just in case
+            const targetUrl = `${rootUrl}/check-video`;
+
+            const response = await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: video.id,
+                    url: video.link
+                })
+            });
+
+            if (response.ok) {
+                successCount++;
+            } else {
+                failCount++;
+                console.warn(`Failed to update ${video.title}`);
+            }
+
+        } catch (error) {
+            console.error(`Error updating ${video.title}:`, error);
+            failCount++;
+        }
+        
+        // Small pause to be gentle on the server (optional)
+        await new Promise(r => setTimeout(r, 500));
+    }
+
+    // 4. Reset Button State & Show Summary
+    btn.classList.remove('refresh-loading');
+    btn.disabled = false;
+    btnText.innerText = originalText;
+
+    if (successCount > 0) {
+        showToast(`Updated ${successCount} videos! (${failCount} skipped)`, 'success');
+    } else {
+        showToast('Update finished, but no videos changed.', 'info');
+    }
 }
 
 // --- ACTIONS (CRUD) ---
@@ -380,7 +473,8 @@ async function submitNewVideo() {
         profile: profile,
         title: title,
         link: link,
-        status: "Pending" // Default status
+        status: "Pending", // Default status
+        views: 0 // Default views
     };
 
     try {
