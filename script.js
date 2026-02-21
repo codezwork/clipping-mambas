@@ -517,6 +517,14 @@ function createVideoRow(video) {
            </span>`
         : '';
 
+    // NEW: Likes Display (using a heart SVG)
+    const likesDisplay = video.likes !== undefined 
+        ? `<span class="view-count" title="Likes" style="margin-left: 12px;">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+             ${formatViews(video.likes)}
+           </span>`
+        : '';
+
     // ADDED: Events for long press, ID for selection logic, Checkbox HTML
     return `
         <div class="video-item ${isSelected ? 'selected' : ''}" 
@@ -538,7 +546,10 @@ function createVideoRow(video) {
                 <div class="video-info">
                     <h4>${video.title}</h4>
                     <a href="${video.link}" target="_blank">Watch Video &#8599;</a>
-                    ${viewsDisplay}
+                    <div style="display: flex; align-items: center; margin-top: 2px;">
+                        ${viewsDisplay}
+                        ${likesDisplay}
+                    </div>
                 </div>
                 
                 <div class="video-actions">
