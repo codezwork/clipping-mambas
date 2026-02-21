@@ -563,7 +563,6 @@ function createVideoRow(video) {
                        <h4>${video.title}</h4>
                        ${revenueBadge}
                     </div>
-                    <a href="${video.link}" target="_blank">Watch Video &#8599;</a>
                     <div style="display: flex; align-items: center; margin-top: 2px;">
                         ${viewsDisplay}
                         ${likesDisplay}
@@ -591,6 +590,7 @@ function createVideoRow(video) {
                         </button>
                         
                         <div id="dropdown-${video.id}" class="dropdown-menu hidden">
+
                              <div class="dropdown-item item-edit" onclick="openEditVideoModal('${video.id}')">
                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -613,6 +613,15 @@ function createVideoRow(video) {
                                  </svg>
                                  Delete
                              </div>
+
+                             <a href="${video.link}" target="_blank" class="dropdown-item" style="text-decoration: none;">
+                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                 </svg>
+                                 Watch Video
+                             </a>
                         </div>
                     </div>
 
