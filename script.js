@@ -525,6 +525,21 @@ function createVideoRow(video) {
            </span>`
         : '';
 
+    // Grab the raw number of views (fallback to 0 if undefined)
+    const rawViews = video.views ? parseInt(video.views) : 0;
+
+    // Calculate the money! 
+    // Note: If your multiplier is $1.50 per 1000 views (RPM), use: (rawViews / 1000) * 1.5
+    // If it is literally $1.50 per single view, keep it as: rawViews * 1.5
+    const estimatedRevenue = (rawViews / 1000) * 1.5; // Adjusted for standard RPM, change if needed!
+
+    // Create a stylish green money badge (only shows if revenue is > $0)
+    const revenueBadge = estimatedRevenue > 0 
+        ? `<span style="color: #ffa500; font-size: 14px; margin-left: 24px; font-weight: bold; margin-bottom: 4px">
+            $${estimatedRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>`
+        : '';
+
     // ADDED: Events for long press, ID for selection logic, Checkbox HTML
     return `
         <div class="video-item ${isSelected ? 'selected' : ''}" 
@@ -544,7 +559,10 @@ function createVideoRow(video) {
                 </div>
 
                 <div class="video-info">
-                    <h4>${video.title}</h4>
+                    <div style="display: flex; align-items: center;">
+                       <h4>${video.title}</h4>
+                       ${revenueBadge}
+                    </div>
                     <a href="${video.link}" target="_blank">Watch Video &#8599;</a>
                     <div style="display: flex; align-items: center; margin-top: 2px;">
                         ${viewsDisplay}
