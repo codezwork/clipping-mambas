@@ -645,8 +645,8 @@ select.mamba-input {
     border-color: #2ecc71; /* Green focus to differentiate from the red Mamba input */
 }
 
-.smm-select { width: 80px; }
-.smm-quantity { width: 80px; }
+.smm-select { width: 100px; }
+.smm-quantity { width: 120px; }
 
 .smm-send-btn {
     padding: 8px 8px;

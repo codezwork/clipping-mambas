@@ -592,11 +592,11 @@ function createVideoRow(video) {
 
             <div id="smm-panel-${video.id}" class="smm-panel hidden">
                 <select id="smm-service-${video.id}" class="smm-input smm-select">
-                    <option value="1224">TikTok</option>
-                    <option value="557">Insta</option>
+                    <option value="1224">ꚠ - Views</option>
+                    <option value="2150">ꚠ - Likes</option>
                 </select>
                 
-                <input type="number" id="smm-quantity-${video.id}" class="smm-input smm-quantity" placeholder="Qty (>100)">
+                <input type="number" id="smm-quantity-${video.id}" class="smm-input smm-quantity" placeholder="Qty (e.g. 100)">
                 
                 <button id="smm-send-btn-${video.id}" class="cta-button smm-send-btn" onclick="submitSmmOrder(event, '${video.id}', '${video.link}')">SEND</button>
                 
