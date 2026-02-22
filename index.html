@@ -192,20 +192,19 @@
             <h3>Edit Profile Names</h3>
             <p style="color: #aaa; font-size: 12px; margin-bottom: 20px;" id="profile-settings-info"></p>
             
-            <input type="text" id="profile-name-1" placeholder="Profile 1 Name" class="mamba-input">
-            <input type="text" id="profile-name-2" placeholder="Profile 2 Name" class="mamba-input">
-            <input type="text" id="profile-name-3" placeholder="Profile 3 Name" class="mamba-input">
+            <div id="dynamic-profile-inputs" style="max-height: 250px; overflow-y: auto; padding-right: 5px; margin-bottom: 10px;"></div>
+            
+            <button class="cta-button" onclick="addNewProfileField()" style="width: 100%; border-style: dashed; padding: 8px; font-size: 12px;">
+                + ADD ANOTHER PROFILE
+            </button>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="cta-button" onclick="saveProfileNames()">SAVE CHANGES</button>
+                <button class="cta-button" onclick="saveProfileNames()">SAVE</button>
                 <button class="cta-button" style="border-color: #444; color: #aaa;" onclick="toggleProfileSettingsModal(false)">CANCEL</button>
             </div>
             
             <div id="install-container-settings" class="hidden" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333; width: 100%;">
                 <button class="cta-button pwa-install-btn" onclick="installPWA()" style="width: 100%; display: flex; align-items: center; justify-content: center; border-style: dashed;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="margin-right: 10px;">
-                        <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
                     INSTALL TO HOMESCREEN
                 </button>
             </div>

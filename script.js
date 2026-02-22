@@ -168,29 +168,37 @@ async function fetchData() {
   }
 }
 
-function getCurrentProfileNames() {
+// 1. DYNAMIC PROFILE FETCHER
+function getProfileData() {
+    let config = {};
     if (profileConfig[currentUser] && profileConfig[currentUser][currentPlatform]) {
-        const config = profileConfig[currentUser][currentPlatform];
-        return [
-            config.profile1 || "Profile 1",
-            config.profile2 || "Profile 2", 
-            config.profile3 || "Profile 3"
-        ];
+        config = profileConfig[currentUser][currentPlatform];
     }
-    return ["Profile 1", "Profile 2", "Profile 3"];
+
+    // Count how many 'profileX' keys exist in Firebase, default to at least 3
+    const profileKeys = Object.keys(config).filter(k => k.startsWith('profile'));
+    let count = Math.max(3, profileKeys.length); 
+
+    const profiles = [];
+    for (let i = 1; i <= count; i++) {
+        profiles.push({
+            key: `Profile ${i}`,       // E.g., "Profile 4" (Used for Dropdowns/UI)
+            dbKey: `profile${i}`,      // E.g., "profile4" (Used for Firestore)
+            name: config[`profile${i}`] || `Profile ${i}` // Display Name
+        });
+    }
+    return profiles;
 }
 
+// 2. UPDATED DROPDOWNS
 function updateProfileDropdown() {
     const select = document.getElementById('new-profile-select');
     if (!select) return;
-    
     select.innerHTML = '';
-    const profileNames = getCurrentProfileNames();
-    
-    profileNames.forEach((name, index) => {
+    getProfileData().forEach(p => {
         const option = document.createElement('option');
-        option.value = `Profile ${index + 1}`; 
-        option.textContent = name;
+        option.value = p.key; 
+        option.textContent = p.name;
         select.appendChild(option);
     });
 }
@@ -198,14 +206,11 @@ function updateProfileDropdown() {
 function updateEditProfileDropdown() {
     const select = document.getElementById('edit-profile-select');
     if (!select) return;
-    
     select.innerHTML = '';
-    const profileNames = getCurrentProfileNames();
-    
-    profileNames.forEach((name, index) => {
+    getProfileData().forEach(p => {
         const option = document.createElement('option');
-        option.value = `Profile ${index + 1}`; 
-        option.textContent = name;
+        option.value = p.key; 
+        option.textContent = p.name;
         select.appendChild(option);
     });
 }
@@ -426,23 +431,30 @@ function renderDashboard() {
     const container = document.getElementById('profiles-container');
     container.innerHTML = "";
 
-    const profileNames = getCurrentProfileNames();
+    const profiles = getProfileData(); // Get dynamic array of profiles
     const filteredData = appData.filter(item => item.platform === currentPlatform);
 
+    // Initialize groupings dynamically
     const grouped = {};
-    ["Profile 1", "Profile 2", "Profile 3"].forEach(p => grouped[p] = []);
+    profiles.forEach(p => grouped[p.key] = []); 
     
     filteredData.forEach(item => {
         if (grouped[item.profile]) {
             grouped[item.profile].push(item);
+        } else {
+            // Failsafe: if a video belongs to a profile that was somehow removed
+            grouped[item.profile] = [item]; 
         }
     });
 
-    ["Profile 1", "Profile 2", "Profile 3"].forEach((profileKey, index) => {
-        let videos = grouped[profileKey];
-        const displayName = profileNames[index];
+    // Loop through dynamic profiles
+    profiles.forEach((p, index) => {
+        let videos = grouped[p.key] || [];
+        const displayName = p.name;
         
         videos = sortVideos(videos);
+
+        // ... Keep everything else in renderDashboard exactly the same from here down!
 
         const total = videos.length;
         const approved = videos.filter(v => v.status === "Approved").length;
@@ -879,52 +891,78 @@ async function deleteVideo(id) {
 }
 
 // --- PROFILE SETTINGS FUNCTIONS ---
+// --- DYNAMIC PROFILE SETTINGS FUNCTIONS ---
 function openProfileSettings(profileIndex = null) {
     const modal = document.getElementById('profile-settings-modal');
-    const profileNames = getCurrentProfileNames();
+    const container = document.getElementById('dynamic-profile-inputs');
+    container.innerHTML = ''; // Clear old inputs
     
-    document.getElementById('profile-name-1').value = profileNames[0];
-    document.getElementById('profile-name-2').value = profileNames[1];
-    document.getElementById('profile-name-3').value = profileNames[2];
+    const profiles = getProfileData();
+    
+    // Generate inputs dynamically
+    profiles.forEach((p, i) => {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = `profile-name-${i + 1}`;
+        input.value = p.name;
+        input.placeholder = `Profile ${i + 1} Name`;
+        input.className = 'mamba-input';
+        container.appendChild(input);
+    });
     
     modal.classList.remove('hidden');
     
     if (profileIndex !== null) {
         setTimeout(() => {
-            document.getElementById(`profile-name-${profileIndex + 1}`).focus();
+            const el = document.getElementById(`profile-name-${profileIndex + 1}`);
+            if (el) el.focus();
         }, 100);
     }
 }
 
-function toggleProfileSettingsModal(show) {
-    const modal = document.getElementById('profile-settings-modal');
-    if (show) modal.classList.remove('hidden');
-    else modal.classList.add('hidden');
+// Function triggered by the "+ ADD ANOTHER PROFILE" button
+function addNewProfileField() {
+    const container = document.getElementById('dynamic-profile-inputs');
+    const currentCount = container.querySelectorAll('input').length;
+    const newIndex = currentCount + 1;
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = `profile-name-${newIndex}`;
+    input.placeholder = `Profile ${newIndex} Name`;
+    input.className = 'mamba-input';
+    
+    container.appendChild(input);
+    input.focus(); // Auto-focus the new field
 }
 
 async function saveProfileNames() {
-    const profile1 = document.getElementById('profile-name-1').value.trim();
-    const profile2 = document.getElementById('profile-name-2').value.trim();
-    const profile3 = document.getElementById('profile-name-3').value.trim();
+    const inputs = document.querySelectorAll('#dynamic-profile-inputs input');
+    const updates = {};
+    const localConfig = {};
     
-    if (!profile1 || !profile2 || !profile3) {
-        showToast('All profile names are required', 'error');
+    let hasError = false;
+    inputs.forEach((input, index) => {
+        const val = input.value.trim();
+        if (!val) hasError = true;
+        // Build Firebase mapping (e.g., "profile4": "Ganya Gaming")
+        updates[`profileConfig.${currentUser}.${currentPlatform}.profile${index + 1}`] = val;
+        localConfig[`profile${index + 1}`] = val;
+    });
+    
+    if (hasError) {
+        showToast('All profile names must be filled out', 'error');
         return;
     }
     
     showLoading(true);
     
     try {
-        const updateField = `profileConfig.${currentUser}.${currentPlatform}`;
+        await db.collection('settings').doc('global').update(updates);
         
-        await db.collection('settings').doc('global').update({
-            [`${updateField}.profile1`]: profile1,
-            [`${updateField}.profile2`]: profile2,
-            [`${updateField}.profile3`]: profile3
-        });
-        
+        // Update local state instantly
         if (!profileConfig[currentUser]) profileConfig[currentUser] = {};
-        profileConfig[currentUser][currentPlatform] = { profile1, profile2, profile3 };
+        profileConfig[currentUser][currentPlatform] = localConfig;
         
         renderDashboard();
         showToast('Profile names updated!', 'success');
@@ -933,22 +971,23 @@ async function saveProfileNames() {
     } catch (error) {
         if (error.code === 'not-found') {
             await db.collection('settings').doc('global').set({
-                 profileConfig: {
-                     [currentUser]: {
-                         [currentPlatform]: { profile1, profile2, profile3 }
-                     }
-                 }
+                 profileConfig: { [currentUser]: { [currentPlatform]: localConfig } }
             }, { merge: true });
             renderDashboard();
             showToast('Profile names updated!', 'success');
             toggleProfileSettingsModal(false);
         } else {
             showToast('Failed to update profile names', 'error');
-            console.error('Error saving profile names:', error);
         }
     }
     
     showLoading(false);
+}
+
+function toggleProfileSettingsModal(show) {
+    const modal = document.getElementById('profile-settings-modal');
+    if (show) modal.classList.remove('hidden');
+    else modal.classList.add('hidden');
 }
 
 // --- UTILITIES ---
