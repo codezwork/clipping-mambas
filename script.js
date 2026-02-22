@@ -169,25 +169,38 @@ async function fetchData() {
 }
 
 // 1. DYNAMIC PROFILE FETCHER
+// 1. DYNAMIC PROFILE FETCHER (Now safely handles gaps if a profile is deleted)
 function getProfileData() {
     let config = {};
     if (profileConfig[currentUser] && profileConfig[currentUser][currentPlatform]) {
         config = profileConfig[currentUser][currentPlatform];
     }
 
-    // Count how many 'profileX' keys exist in Firebase, default to at least 3
     const profileKeys = Object.keys(config).filter(k => k.startsWith('profile'));
-    let count = Math.max(3, profileKeys.length); 
+    
+    // Sort keys properly so "profile10" comes after "profile9"
+    const sortedKeys = profileKeys.sort((a, b) => {
+        return parseInt(a.replace('profile', '')) - parseInt(b.replace('profile', ''));
+    });
 
-    const profiles = [];
-    for (let i = 1; i <= count; i++) {
-        profiles.push({
-            key: `Profile ${i}`,       // E.g., "Profile 4" (Used for Dropdowns/UI)
-            dbKey: `profile${i}`,      // E.g., "profile4" (Used for Firestore)
-            name: config[`profile${i}`] || `Profile ${i}` // Display Name
-        });
+    // Default setup for brand new users
+    if (sortedKeys.length === 0) {
+        return [
+            { key: "Profile 1", dbKey: "profile1", name: "Profile 1" },
+            { key: "Profile 2", dbKey: "profile2", name: "Profile 2" },
+            { key: "Profile 3", dbKey: "profile3", name: "Profile 3" }
+        ];
     }
-    return profiles;
+
+    // Map the actual existing keys
+    return sortedKeys.map(k => {
+        const num = k.replace('profile', '');
+        return {
+            key: `Profile ${num}`, // Used for dropdowns/grouping
+            dbKey: k,              // Used for Firestore backend saving
+            name: config[k] || `Profile ${num}`
+        };
+    });
 }
 
 // 2. UPDATED DROPDOWNS
@@ -892,68 +905,124 @@ async function deleteVideo(id) {
 
 // --- PROFILE SETTINGS FUNCTIONS ---
 // --- DYNAMIC PROFILE SETTINGS FUNCTIONS ---
+// 2. OPEN SETTINGS MODAL (Now adds the UI Delete Button)
 function openProfileSettings(profileIndex = null) {
     const modal = document.getElementById('profile-settings-modal');
     const container = document.getElementById('dynamic-profile-inputs');
-    container.innerHTML = ''; // Clear old inputs
+    container.innerHTML = ''; 
     
     const profiles = getProfileData();
     
-    // Generate inputs dynamically
     profiles.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'profile-input-row';
+        row.style.display = 'flex';
+        row.style.gap = '8px';
+        row.style.alignItems = 'center';
+        row.style.marginBottom = '10px';
+
         const input = document.createElement('input');
         input.type = 'text';
-        input.id = `profile-name-${i + 1}`;
         input.value = p.name;
-        input.placeholder = `Profile ${i + 1} Name`;
+        input.dataset.dbkey = p.dbKey; // CRITICAL: tracks original DB key
         input.className = 'mamba-input';
-        container.appendChild(input);
+        input.style.marginTop = '0'; 
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'icon-btn delete-btn';
+        delBtn.style.marginTop = '0';
+        delBtn.style.minWidth = '38px'; // Keep it uniform
+        delBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+        
+        // Remove row on click
+        delBtn.onclick = () => row.remove();
+
+        row.appendChild(input);
+        row.appendChild(delBtn);
+        container.appendChild(row);
     });
     
     modal.classList.remove('hidden');
-    
-    if (profileIndex !== null) {
-        setTimeout(() => {
-            const el = document.getElementById(`profile-name-${profileIndex + 1}`);
-            if (el) el.focus();
-        }, 100);
-    }
 }
 
 // Function triggered by the "+ ADD ANOTHER PROFILE" button
+// 3. ADD NEW PROFILE BUTTON (Generates safe next-index DB Keys)
 function addNewProfileField() {
     const container = document.getElementById('dynamic-profile-inputs');
-    const currentCount = container.querySelectorAll('input').length;
-    const newIndex = currentCount + 1;
     
+    // Find the highest existing profile number to prevent overwriting
+    const existingInputs = container.querySelectorAll('input');
+    let maxIndex = 0;
+    existingInputs.forEach(inp => {
+        const num = parseInt(inp.dataset.dbkey.replace('profile', ''));
+        if (!isNaN(num) && num > maxIndex) maxIndex = num;
+    });
+    
+    const newIndex = maxIndex + 1;
+    
+    const row = document.createElement('div');
+    row.className = 'profile-input-row';
+    row.style.display = 'flex';
+    row.style.gap = '8px';
+    row.style.alignItems = 'center';
+    row.style.marginBottom = '10px';
+
     const input = document.createElement('input');
     input.type = 'text';
-    input.id = `profile-name-${newIndex}`;
-    input.placeholder = `Profile ${newIndex} Name`;
+    input.placeholder = `New Profile Name`;
+    input.dataset.dbkey = `profile${newIndex}`; // Assign the new key
     input.className = 'mamba-input';
+    input.style.marginTop = '0';
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'icon-btn delete-btn';
+    delBtn.style.marginTop = '0';
+    delBtn.style.minWidth = '38px';
+    delBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+    delBtn.onclick = () => row.remove();
+
+    row.appendChild(input);
+    row.appendChild(delBtn);
+    container.appendChild(row);
     
-    container.appendChild(input);
-    input.focus(); // Auto-focus the new field
+    input.focus();
 }
 
+// 4. SAVE & DELETE SYNC (Syncs DOM removals directly to Firebase)
 async function saveProfileNames() {
-    const inputs = document.querySelectorAll('#dynamic-profile-inputs input');
+    const rows = document.querySelectorAll('.profile-input-row');
     const updates = {};
     const localConfig = {};
-    
+    const activeKeys = new Set();
     let hasError = false;
-    inputs.forEach((input, index) => {
+
+    // Get the keys that existed BEFORE hitting save
+    const existingProfiles = getProfileData();
+    const existingKeys = existingProfiles.map(p => p.dbKey);
+
+    rows.forEach((row) => {
+        const input = row.querySelector('input');
         const val = input.value.trim();
+        const dbKey = input.dataset.dbkey;
+        
         if (!val) hasError = true;
-        // Build Firebase mapping (e.g., "profile4": "Ganya Gaming")
-        updates[`profileConfig.${currentUser}.${currentPlatform}.profile${index + 1}`] = val;
-        localConfig[`profile${index + 1}`] = val;
+        
+        activeKeys.add(dbKey);
+        updates[`profileConfig.${currentUser}.${currentPlatform}.${dbKey}`] = val;
+        localConfig[dbKey] = val;
     });
     
     if (hasError) {
         showToast('All profile names must be filled out', 'error');
         return;
     }
+    
+    // CRITICAL FIX: Find deleted rows and tell Firebase to permanently erase them
+    existingKeys.forEach(key => {
+        if (!activeKeys.has(key)) {
+            updates[`profileConfig.${currentUser}.${currentPlatform}.${key}`] = firebase.firestore.FieldValue.delete();
+        }
+    });
     
     showLoading(true);
     
@@ -965,7 +1034,7 @@ async function saveProfileNames() {
         profileConfig[currentUser][currentPlatform] = localConfig;
         
         renderDashboard();
-        showToast('Profile names updated!', 'success');
+        showToast('Profiles saved successfully!', 'success');
         toggleProfileSettingsModal(false);
         
     } catch (error) {
@@ -974,13 +1043,13 @@ async function saveProfileNames() {
                  profileConfig: { [currentUser]: { [currentPlatform]: localConfig } }
             }, { merge: true });
             renderDashboard();
-            showToast('Profile names updated!', 'success');
+            showToast('Profiles saved successfully!', 'success');
             toggleProfileSettingsModal(false);
         } else {
-            showToast('Failed to update profile names', 'error');
+            showToast('Failed to save profiles', 'error');
+            console.error(error);
         }
     }
-    
     showLoading(false);
 }
 
