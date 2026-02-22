@@ -15,7 +15,11 @@ function toggleSmmPanel(e, videoId) {
 async function submitSmmOrder(e, videoId, videoLink) {
     e.stopPropagation();
     
-    const service = document.getElementById(`smm-service-${videoId}`).value;
+    const serviceSelect = document.getElementById(`smm-service-${videoId}`);
+    const service = serviceSelect.value;
+    // NEW: Grab the actual text ("ꚠ - Views") and strip out the icon for a clean log
+    const serviceName = serviceSelect.options[serviceSelect.selectedIndex].text.replace('ꚠ - ', '').trim();
+    
     const quantity = document.getElementById(`smm-quantity-${videoId}`).value;
     const btn = document.getElementById(`smm-send-btn-${videoId}`);
 
@@ -30,9 +34,10 @@ async function submitSmmOrder(e, videoId, videoLink) {
     btn.disabled = true;
     btn.classList.add('btn-loading');
 
-    // 2. Format the Date (e.g., "20 - 11:12 AM")
+    // 2. Format the Date and the Details (e.g., "20 - 11:12 AM (100 Views)")
     const now = new Date();
     const dateStr = now.getDate() + ' - ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const fullLogDetails = `${dateStr} (${quantity} ${serviceName})`;
 
     try {
         const response = await fetch(SMM_BACKEND_URL, {
@@ -48,13 +53,12 @@ async function submitSmmOrder(e, videoId, videoLink) {
         if (response.ok) {
             showToast("Order placed successfully!", "success");
             
-            // 3. Save the log to Firestore so it persists on reload
+            // 3. Save the NEW formatted log to Firestore so it persists on reload
             await db.collection('videos').doc(videoId).update({
-                lastSmmOrder: dateStr
+                lastSmmOrder: fullLogDetails
             });
             
-            // Note: The UI will automatically re-render via the Firestore onSnapshot listener, 
-            // instantly updating the log text and resetting the panel state!
+            // The UI will automatically re-render via the Firestore listener!
         } else {
             throw new Error("API returned an error");
         }
@@ -62,7 +66,6 @@ async function submitSmmOrder(e, videoId, videoLink) {
         console.error(error);
         showToast("Failed to place order.", "error");
         
-        // Only revert button if it fails. If it succeeds, the Firestore sync re-renders the row anyway.
         btn.innerText = originalText;
         btn.disabled = false;
         btn.classList.remove('btn-loading');
