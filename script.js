@@ -660,8 +660,8 @@ function createVideoRow(video) {
                 </select>
             
                 <select id="smm-service-${video.id}" class="smm-input smm-select" style="width: 120px;">
-                    <option value="1224">R - ꚠ V</option>
-                    <option value="2150">R - ꚠ L</option>
+                    <option value="1224">ꚠ - Views</option>
+                    <option value="2150">ꚠ - Likes</option>
                 </select>
                 
                 <input type="number" id="smm-quantity-${video.id}" class="smm-input smm-quantity" placeholder="Qty (e.g. 100)">
