@@ -654,9 +654,20 @@ function createVideoRow(video) {
             </div>
 
             <div id="smm-panel-${video.id}" class="smm-panel hidden">
-                <select id="smm-service-${video.id}" class="smm-input smm-select">
-                    <option value="1224">ꚠ - Views</option>
-                    <option value="2150">ꚠ - Likes</option>
+                <select id="smm-provider-${video.id}" class="smm-input smm-select" style="width: 100px;" onchange="syncSmmDropdowns('${video.id}')">
+                    <option value="smmRaja">SMM Raja</option>
+                    <option value="smmPanelOne">SMM Panel One</option>
+                </select>
+            
+                <select id="smm-service-${video.id}" class="smm-input smm-select" style="width: 100px;">
+                    <optgroup label="SMM Raja Services">
+                        <option value="1224">ꚠ - Views</option>
+                        <option value="2150">ꚠ - Likes</option>
+                    </optgroup>
+                    <optgroup label="SMM Panel One Services">
+                        <option value="8429">ꚠ - Views</option> 
+                        <option value="12981">ꚠ - Likes</option>
+                    </optgroup>
                 </select>
                 
                 <input type="number" id="smm-quantity-${video.id}" class="smm-input smm-quantity" placeholder="Qty (e.g. 100)">
@@ -667,7 +678,6 @@ function createVideoRow(video) {
                     Last: ${video.lastSmmOrder ? video.lastSmmOrder : 'Never'}
                 </div>
             </div>
-        </div>
     `;
 }
 
