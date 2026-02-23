@@ -74,20 +74,20 @@ async function submitSmmOrder(e, videoId, videoLink) {
 }
 
 // Syncs the Service dropdown so users can't pick Panel One with a Raja Service ID
+// Swaps out the available services depending on the chosen provider
 function syncSmmDropdowns(videoId) {
     const provider = document.getElementById(`smm-provider-${videoId}`).value;
     const serviceSelect = document.getElementById(`smm-service-${videoId}`);
     
-    const rajaGroup = serviceSelect.querySelector('optgroup[label="SMM Raja Services"]');
-    const panelOneGroup = serviceSelect.querySelector('optgroup[label="SMM Panel One Services"]');
-    
     if (provider === 'smmRaja') {
-        rajaGroup.style.display = 'block';
-        panelOneGroup.style.display = 'none';
-        serviceSelect.value = "1224"; // Reset to Raja default (Views)
-    } else {
-        rajaGroup.style.display = 'none';
-        panelOneGroup.style.display = 'block';
-        serviceSelect.value = "8429"; // Reset to Panel One default (Views)
+        serviceSelect.innerHTML = `
+            <option value="1224">ꚠ - Views</option>
+            <option value="2150">ꚠ - Likes</option>
+        `;
+    } else if (provider === 'smmPanelOne') {
+        serviceSelect.innerHTML = `
+            <option value="8429">ꚠ - Views</option>
+            <option value="12981">ꚠ - Likes</option>
+        `;
     }
 }
