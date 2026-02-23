@@ -12,13 +12,19 @@ function toggleSmmPanel(e, videoId) {
 }
 
 // Handles the API request and Render cold-start UX
+// Handles the API request and Render cold-start UX
 async function submitSmmOrder(e, videoId, videoLink) {
     e.stopPropagation();
     
-    // ADDED: Grab the provider value from the new dropdown
+    // Grab the provider value
     const provider = document.getElementById(`smm-provider-${videoId}`).value;
     
-    const service = document.getElementById(`smm-service-${videoId}`).value;
+    const serviceSelect = document.getElementById(`smm-service-${videoId}`);
+    const service = serviceSelect.value;
+    
+    // RESTORED: Grab the actual text (e.g., "R - ꚠ V") and strip out the icon for a clean log
+    const serviceName = serviceSelect.options[serviceSelect.selectedIndex].text.replace('ꚠ ', '').trim();
+    
     const quantity = document.getElementById(`smm-quantity-${videoId}`).value;
     const btn = document.getElementById(`smm-send-btn-${videoId}`);
 
@@ -27,15 +33,16 @@ async function submitSmmOrder(e, videoId, videoLink) {
         return;
     }
 
-    // 1. Instant UI Feedback (Solves the Render 45s delay risk)
+    // 1. Instant UI Feedback
     const originalText = btn.innerText;
     btn.innerText = "ORDERED...";
     btn.disabled = true;
     btn.classList.add('btn-loading');
 
-    // 2. Format the Date (e.g., "20 - 11:12 AM")
+    // 2. Format the Date and Details (e.g., "20 - 11:12 AM (100 R - V)")
     const now = new Date();
     const dateStr = now.getDate() + ' - ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const fullLogDetails = `${dateStr} (${quantity} ${serviceName})`;
 
     try {
         const response = await fetch(SMM_BACKEND_URL, {
@@ -45,20 +52,18 @@ async function submitSmmOrder(e, videoId, videoLink) {
                 link: videoLink,
                 service: service,
                 quantity: quantity,
-                provider: provider // This will now successfully send 'smmRaja' or 'smmPanelOne'
+                provider: provider 
             })
         });
 
         if (response.ok) {
             showToast("Order placed successfully!", "success");
             
-            // 3. Save the log to Firestore so it persists on reload
+            // 3. RESTORED: Save the NEW formatted log to Firestore
             await db.collection('videos').doc(videoId).update({
-                lastSmmOrder: dateStr
+                lastSmmOrder: fullLogDetails
             });
             
-            // Note: The UI will automatically re-render via the Firestore onSnapshot listener, 
-            // instantly updating the log text and resetting the panel state!
         } else {
             throw new Error("API returned an error");
         }
@@ -66,7 +71,6 @@ async function submitSmmOrder(e, videoId, videoLink) {
         console.error(error);
         showToast("Failed to place order.", "error");
         
-        // Only revert button if it fails. If it succeeds, the Firestore sync re-renders the row anyway.
         btn.innerText = originalText;
         btn.disabled = false;
         btn.classList.remove('btn-loading');
