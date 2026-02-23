@@ -85,13 +85,13 @@ function syncSmmDropdowns(videoId) {
     
     if (provider === 'smmRaja') {
         serviceSelect.innerHTML = `
-            <option value="1224">ꚠ - Views</option>
-            <option value="2150">ꚠ - Likes</option>
+            <option value="1224">ꚠ - Views (Raja)</option>
+            <option value="2150">ꚠ - Likes (Raja)</option>
         `;
     } else if (provider === 'smmPanelOne') {
         serviceSelect.innerHTML = `
-            <option value="8429">ꚠ - Views</option>
-            <option value="12981">ꚠ - Likes</option>
+            <option value="8429">ꚠ - Views (Panel1)</option>
+            <option value="12981">ꚠ - Likes (Panel1)</option>
         `;
     }
 }
