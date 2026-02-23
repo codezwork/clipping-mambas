@@ -678,6 +678,7 @@ function createVideoRow(video) {
                     Last: ${video.lastSmmOrder ? video.lastSmmOrder : 'Never'}
                 </div>
             </div>
+        </div>
     `;
 }
 
