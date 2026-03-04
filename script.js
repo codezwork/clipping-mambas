@@ -192,7 +192,7 @@ const firebaseConfig = {
               totalViews += (data.views ? parseInt(data.views) : 0);
           });
           
-          const revenue = (totalViews / 1000) * 1.5;
+          const revenue = (totalViews / 1000) * 2.25;
           document.getElementById('platform-total-revenue').innerText = 
               `$${revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
               
@@ -346,7 +346,7 @@ const firebaseConfig = {
           else pendingCount++;
       });
   
-      const revenue = (totalViews / 1000) * 1.5;
+      const revenue = (totalViews / 1000) * 2.25;
       const avgViews = totalVideos > 0 ? Math.round(totalViews / totalVideos) : 0;
   
       document.getElementById('stat-revenue').innerText = `$${revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
