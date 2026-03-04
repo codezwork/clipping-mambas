@@ -224,7 +224,7 @@
   /* STICKY STATS HEADER */
   .sticky-stats-header {
       position: sticky;
-      top: 70px; /* Navbar (approx 80px) + 1px */
+      top: 65px; /* Navbar (approx 65px) */
       z-index: 900;
       background: rgba(18, 18, 18, 0.98);
       backdrop-filter: blur(10px);
