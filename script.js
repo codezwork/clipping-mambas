@@ -27,6 +27,19 @@ const firebaseConfig = {
         const loginView = document.getElementById('login-view');
         const homeView = document.getElementById('home-view');
 
+        // --- NEW: CHECK 24-HOUR EXPIRY ---
+        const loginTime = localStorage.getItem('mambaLoginTime');
+        const oneDayMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds -> 24 * 60 * 60 * 1000
+        const now = Date.now();
+
+        // If user is technically logged in via Firebase, BUT their local session is expired or missing
+        if (user && (!loginTime || (now - loginTime > oneDayMs))) {
+            console.log("Session expired. Forcing logout.");
+            auth.signOut(); // This triggers the 'else' block below automatically
+            return;
+        }
+        // ---------------------------------
+
         if (user) {
             // --- CASE 1: USER IS LOGGED IN ---
             
@@ -60,6 +73,8 @@ const firebaseConfig = {
 
             // 3. Hide Splash immediately so they can log in
             splash.classList.add('hidden');
+
+            localStorage.removeItem('mambaLoginTime'); // Clean up old timestamp
         }
     });
 
@@ -87,11 +102,22 @@ const firebaseConfig = {
         btn.disabled = true;
         errorText.style.display = 'none';
 
+        // --- FIX: SET TIMESTAMP OPTIMISTICALLY ---
+        // We set this BEFORE calling Firebase, so the listener sees it immediately.
+        localStorage.setItem('mambaLoginTime', Date.now()); 
+        // -----------------------------------------
+
         try {
             await auth.signInWithEmailAndPassword(email, password);
-            // onAuthStateChanged will handle the redirect
+            // Success! The listener will now see the timestamp and let us in.
         } catch (error) {
             console.error("Login Failed", error);
+            
+            // --- FIX: CLEANUP ON FAIL ---
+            // If password was wrong, remove the timestamp we just set.
+            localStorage.removeItem('mambaLoginTime'); 
+            // ----------------------------
+
             btn.innerText = originalText;
             btn.disabled = false;
             errorText.innerText = "Access Denied: Invalid Credentials";
