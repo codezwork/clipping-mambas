@@ -14,6 +14,98 @@ const firebaseConfig = {
       firebase.initializeApp(firebaseConfig);
   }
   const db = firebase.firestore();
+  const auth = firebase.auth(); // Initialize Auth
+
+    // --- AUTHENTICATION LOGIC ---
+
+    // Listen for auth state changes (Login/Logout)
+    // --- AUTHENTICATION LOGIC ---
+
+    // Listen for auth state changes (Login/Logout)
+    auth.onAuthStateChanged((user) => {
+        const splash = document.getElementById('splash-view');
+        const loginView = document.getElementById('login-view');
+        const homeView = document.getElementById('home-view');
+
+        if (user) {
+            // --- CASE 1: USER IS LOGGED IN ---
+            
+            // 1. Ensure Login is hidden
+            loginView.classList.add('hidden');
+            loginView.classList.remove('active');
+            
+            // 2. Determine where to go (Home, or keep current view if deep linked)
+            if (document.getElementById('dashboard-view').classList.contains('hidden') && 
+                document.getElementById('profile-select-view').classList.contains('hidden')) {
+                homeView.classList.remove('hidden');
+            }
+            
+            // 3. Load Data
+            loadGlobalSettings(); 
+
+            // 4. Finally, fade out Splash
+            setTimeout(() => {
+                splash.classList.add('hidden');
+            }, 500); // Small delay for smoothness
+
+        } else {
+            // --- CASE 2: USER IS NOT LOGGED IN ---
+            
+            // 1. Hide all app views
+            hideAllViews();
+            
+            // 2. Show Login Screen
+            loginView.classList.remove('hidden');
+            loginView.classList.add('active');
+
+            // 3. Hide Splash immediately so they can log in
+            splash.classList.add('hidden');
+        }
+    });
+
+    function hideAllViews() {
+        document.getElementById('home-view').classList.add('hidden');
+        document.getElementById('profile-select-view').classList.add('hidden');
+        document.getElementById('dashboard-view').classList.add('hidden');
+    }
+
+    async function handleMasterLogin() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const errorText = document.getElementById('login-error');
+        const btn = document.querySelector('#login-view button');
+
+        if (!email || !password) {
+            errorText.innerText = "Please enter credentials.";
+            errorText.style.display = 'block';
+            return;
+        }
+
+        // UI Loading State
+        const originalText = btn.innerText;
+        btn.innerText = "VERIFYING...";
+        btn.disabled = true;
+        errorText.style.display = 'none';
+
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            // onAuthStateChanged will handle the redirect
+        } catch (error) {
+            console.error("Login Failed", error);
+            btn.innerText = originalText;
+            btn.disabled = false;
+            errorText.innerText = "Access Denied: Invalid Credentials";
+            errorText.style.display = 'block';
+        }
+    }
+
+    function handleLogout() {
+        if(confirm("Disconnect from Mamba System?")) {
+            auth.signOut().then(() => {
+                showToast("Logged out successfully", "info");
+            });
+        }
+    }
   
   // --- STATE MANAGEMENT ---
   let appData = [];
@@ -86,8 +178,6 @@ const firebaseConfig = {
               document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
           }
       });
-  
-      loadGlobalSettings();
   });
   
   async function loadGlobalSettings() {

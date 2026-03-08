@@ -625,3 +625,29 @@
       .refresh-btn span { display: none; }
       .refresh-btn { padding: 6px; }
   }
+
+/* LOGIN VIEW */
+
+#login-view .mamba-input:focus {
+    border-color: #2ecc71; /* Green focus for login to show "Access Granted" feel */
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.2);
+}
+
+/* Ensure the login view sits on top of everything */
+#login-view {
+    z-index: 10000;
+}
+
+/* SPLASH SCREEN */
+
+/* Mamba Pulse Animation for Splash Screen */
+.mamba-pulse {
+    animation: pulse-red 1.5s infinite ease-in-out;
+    text-align: center;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(0.95); opacity: 0.6; }
+    50% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 15px rgba(255, 68, 68, 0.4); }
+    100% { transform: scale(0.95); opacity: 0.6; }
+}
