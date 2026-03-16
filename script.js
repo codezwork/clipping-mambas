@@ -1043,3 +1043,40 @@ const firebaseConfig = {
           document.getElementById('install-container-settings').classList.add('hidden');
       }
   }
+
+// --- iOS PWA INSTALL INSTRUCTIONS ---
+
+// Detect if the user is on an Apple device
+const isIos = () => {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    return /iphone|ipad|ipod/.test(userAgent);
+};
+
+// Detect if the app is already installed and running in standalone mode on iOS
+const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+// Run this check when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // If they are on iOS and NOT using the installed app...
+    if (isIos() && !isInStandaloneMode()) {
+        const homeContainer = document.getElementById('install-container-home');
+        const settingsContainer = document.getElementById('install-container-settings');
+        
+        const iosMessage = `
+            <div style="background: rgba(255,255,255,0.05); border: 1px dashed #666; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="color: #fff; font-size: 12px; margin-bottom: 5px; font-weight: bold;">📱 Install on iPhone</p>
+                <p style="color: #aaa; font-size: 11px;">Tap the <strong>Share</strong> icon at the bottom of Safari, then select <strong>"Add to Home Screen"</strong>.</p>
+            </div>
+        `;
+
+        // Unhide the containers and swap the button out for the instructions
+        if (homeContainer) {
+            homeContainer.classList.remove('hidden');
+            homeContainer.innerHTML = iosMessage;
+        }
+        if (settingsContainer) {
+            settingsContainer.classList.remove('hidden');
+            settingsContainer.innerHTML = iosMessage;
+        }
+    }
+});
