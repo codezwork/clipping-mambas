@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAMBA CLIPS TRACKER</title>
+    <title>MAMBA CLIPPERS</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff4444">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Elite Mamba">
+    <meta name="apple-mobile-web-app-title" content="Mamba Clippers">
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,10 +18,10 @@
 </head>
 <body>
 
-    <section id="splash-view" class="app-view active" style="position: fixed; top:0; left:0; width:100%; height:100vh; z-index: 20000; background: #121212; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-        <div class="mamba-pulse">
-            <h1 style="font-size: 32px; letter-spacing: 4px; margin: 0;">MAMBA</h1>
-            <p style="color: #ff4444; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-top: 10px;">System Loading</p>
+    <section id="splash-view" class="app-view active" style="position: fixed; top:0; left:0; width:100%; height:100vh; z-index: 20000; background: #121212; display: flex; align-items: center; justify-content: center; flex-direction: column; transition: opacity 0.8s ease-out;">
+        <div class="logo-wrapper">
+            <img src="icon-512.png" alt="Mamba Beta Logo" class="logo-image">
+            <div class="glass-reflection"></div>
         </div>
     </section>
 
@@ -279,8 +279,8 @@
                         <span class="stat-value revenue-text" id="stat-revenue">$0.00</span>
                     </div>
                     <div class="stat-box">
-                        <span class="stat-label">Avg. Views</span>
-                        <span class="stat-value" id="stat-avg-views">0</span>
+                        <span class="stat-label">Total Clips</span>
+                        <span class="stat-value" id="stat-total-clips">0</span>
                     </div>
                 </div>
                 
@@ -389,7 +389,11 @@
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('service-worker.js')
-                .then(reg => console.log('SW registered'))
+                .then(reg => {
+                    console.log('SW registered');
+                    // NEW: Force the browser to check for an app update in the background
+                    reg.update();
+                })
                 .catch(err => console.log('SW error:', err));
         });
     }

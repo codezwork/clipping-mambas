@@ -297,7 +297,8 @@
       border-bottom: 1px solid #222;
       padding: 15px;
       display: flex;
-      align-items: center;
+      flex-direction: column; 
+      align-items: stretch;
       transition: background-color 0.2s ease, transform 0.1s;
       position: relative; 
       user-select: none; 
@@ -425,7 +426,10 @@
   .dropdown-container { position: relative; display: inline-block; }
   
   .dropdown-menu {
-      position: absolute; right: 0; top: 40px;
+      position: absolute; 
+      top: 40px;
+      right: 0;        /* NEW: Anchors the menu to the right edge */
+      left: auto;      /* NEW: Prevents it from stretching to the left edge */
       background-color: #1a1a1a;
       min-width: 140px;
       box-shadow: 0 8px 16px rgba(0,0,0,0.5);
@@ -511,21 +515,9 @@
   }
   .mamba-input:focus { border-color: #ff4444; }
   
-  select.mamba-input {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-  }
-  
   /* ==========================================================================
-   SMM Panel Styles
+   SMM Panel NEW TOGGLE UI Styles
    ========================================================================== */
-.video-item {
-    flex-direction: column; /* Allows panel to drop below main content */
-    align-items: stretch;
-}
-
 .smm-panel {
     background: transparent;
     border-top: 1px dashed #333;
@@ -534,42 +526,66 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 12px;
     animation: fadeIn 0.2s ease-in-out;
 }
 
-.smm-input {
-    background: #0a0a0a;
-    border: 1px solid #333;
-    color: #fff;
-    padding: 8px 8px;
-    border-radius: 4px;
+.smm-toggle-group {
+    display: flex;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #ff4444;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.smm-toggle-btn {
+    background: transparent;
+    color: #ffffff;
+    border: none;
+    padding: 6px 14px;
     font-size: 12px;
-    outline: none;
-    transition: border-color 0.3s;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
 }
 
-.smm-input:focus {
-    border-color: #2ecc71; /* Green focus to differentiate from the red Mamba input */
+.smm-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
 
-.smm-select { width: 100px; }
-.smm-quantity { width: 120px; }
+.smm-toggle-btn.active {
+    background: rgba(255, 68, 68, 0.25);
+    color: #ff4444;
+}
 
-.smm-send-btn {
-    padding: 8px 8px;
-    font-size: 9px;
-    border-color: #2ecc71;
-    border-radius: 4px;
+.smm-quantities {
+    display: flex;
+    gap: 8px;
+}
+
+.smm-qty-btn {
+    background: transparent;
+    border: 1px solid #2ecc71;
     color: #2ecc71;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 45px;
 }
 
-.smm-send-btn:hover {
+.smm-qty-btn:hover {
     background: #2ecc71;
     color: #121212;
 }
 
-.smm-send-btn:disabled, .btn-loading {
+.smm-qty-btn.btn-loading {
     background: rgba(46, 204, 113, 0.2);
     border-color: #2ecc71;
     color: #2ecc71;
@@ -627,27 +643,173 @@
   }
 
 /* LOGIN VIEW */
-
 #login-view .mamba-input:focus {
-    border-color: #2ecc71; /* Green focus for login to show "Access Granted" feel */
+    border-color: #2ecc71; 
     box-shadow: 0 0 10px rgba(46, 204, 113, 0.2);
 }
 
-/* Ensure the login view sits on top of everything */
 #login-view {
     z-index: 10000;
 }
 
-/* SPLASH SCREEN */
+/* Standalone Automation Button (Lightning Bolt) */
+.standalone-auto-btn {
+    background: transparent;
+    border: 1px solid rgba(243, 156, 18, 0.4);
+    color: #f39c12;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    height: 30px; /* Matches the height of the toggle group perfectly */
+}
 
-/* Mamba Pulse Animation for Splash Screen */
-.mamba-pulse {
-    animation: pulse-red 1.5s infinite ease-in-out;
+.standalone-auto-btn:hover:not(:disabled) {
+    background: rgba(243, 156, 18, 0.15);
+    border-color: #f39c12;
+    transform: translateY(-1px);
+}
+
+.standalone-auto-btn.btn-loading {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+/* 24-Hour Cooldown State */
+.standalone-auto-btn.disabled-auto {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    color: #555;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ==========================================================================
+   PREMIUM SPLASH SCREEN (V2 BETA)
+   ========================================================================== */
+.logo-wrapper {
+    position: relative;
+    width: 140px; 
+    height: 140px;
+    /* Smooth zoom out effect */
+    animation: slowZoom 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    
+    /* CRITICAL: This masks the shine so it ONLY appears on the non-transparent pixels of your PNG logo */
+    -webkit-mask-image: url('icon-512.png');
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-image: url('icon-512.png');
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    
+    overflow: hidden; 
+}
+
+.logo-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.glass-reflection {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        to right, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0.75) 50%, 
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-25deg);
+    animation: glassSweep 2.5s infinite;
+}
+
+@keyframes slowZoom {
+    0% { transform: scale(0.7); opacity: 0; }
+    15% { opacity: 1; }
+    100% { transform: scale(1.1); opacity: 1; }
+}
+
+@keyframes glassSweep {
+    0% { left: -100%; }
+    20%, 100% { left: 200%; }
+}
+
+/* ==========================================================================
+   NEW: Custom CPM Inputs & Custom SMM Field
+   ========================================================================== */
+
+/* Custom Input inside SMM Panel */
+.smm-custom-qty {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.smm-custom-input {
+    background: transparent;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    width: 60px;
+    outline: none;
+    transition: all 0.2s ease;
     text-align: center;
 }
 
-@keyframes pulse-red {
-    0% { transform: scale(0.95); opacity: 0.6; }
-    50% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 15px rgba(255, 68, 68, 0.4); }
-    100% { transform: scale(0.95); opacity: 0.6; }
+.smm-custom-input:focus {
+    border-color: #2ecc71;
+    background: rgba(255,255,255,0.02);
+}
+
+/* Remove default number arrows on Webkit browsers for sleekness */
+.smm-custom-input::-webkit-outer-spin-button,
+.smm-custom-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.smm-custom-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Custom Upload Button (Up Arrow) */
+.smm-custom-btn {
+    background: transparent;
+    border: 1px solid #2ecc71;
+    color: #2ecc71;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.smm-custom-btn:hover {
+    background: #2ecc71;
+    color: #121212;
+}
+
+.smm-custom-btn.btn-loading {
+    background: rgba(46, 204, 113, 0.2);
+    border-color: #2ecc71;
+    color: #2ecc71;
+    cursor: wait;
+}
+
+/* Making sure settings inputs stay responsive */
+@media (max-width: 480px) {
+    .smm-custom-input { width: 50px; }
+    .cpm-input { min-width: 60px !important; width: 60px !important; }
 }
