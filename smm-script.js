@@ -85,7 +85,7 @@ async function submitSmmOrder(e, videoId, videoLink, quantity, btnElement) {
     let serviceName = '';
 
     // Map the IDs based on provider and mode combinations
-    if (provider === 'smmRaja' && mode === 'views') { serviceId = '1224'; serviceName = 'Views (R)'; }
+    if (provider === 'smmRaja' && mode === 'views') { serviceId = '7235'; serviceName = 'Views (R)'; }
     if (provider === 'smmRaja' && mode === 'likes') { serviceId = '2150'; serviceName = 'Likes (R)'; }
     if (provider === 'smmPanelOne' && mode === 'views') { serviceId = '8429'; serviceName = 'Views (O)'; }
     if (provider === 'smmPanelOne' && mode === 'likes') { serviceId = '12981'; serviceName = 'Likes (O)'; }
@@ -156,7 +156,7 @@ async function fireAutomation(e, videoId, videoLink, btnElement) {
     // Hardcoded Payload for 24H Drip Feed
     const payload = {
         link: videoLink,
-        service: "1224",    // SMM Raja Views
+        service: "7235",    // SMM Raja Views
         quantity: 400,      // Total: 400 (4 runs of 100 views)
         runs: 4,            // 4 executions
         interval: 360,      // 6 Hours in minutes
