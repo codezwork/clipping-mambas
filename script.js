@@ -620,10 +620,10 @@ function createVideoRow(video) {
                 </div>
             </div>
 
-            <div id="smm-panel-${video.id}" class="smm-panel hidden" data-provider="smmRaja" data-mode="views">
+            <div id="smm-panel-${video.id}" class="smm-panel hidden" data-provider="smmLite" data-mode="views">
                 
                 <div class="smm-toggle-group">
-                    <button class="smm-toggle-btn active" onclick="setSmmProvider(event, '${video.id}', 'smmRaja')" id="prov-raja-${video.id}" title="SMM Raja">R</button>
+                    <button class="smm-toggle-btn active" onclick="setSmmProvider(event, '${video.id}', 'smmLite')" id="prov-lite-${video.id}" title="SMM Lite">L</button>
                     <button class="smm-toggle-btn" onclick="setSmmProvider(event, '${video.id}', 'smmPanelOne')" id="prov-one-${video.id}" title="SMM Panel One">O</button>
                 </div>
             

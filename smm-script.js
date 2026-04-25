@@ -14,15 +14,15 @@ function toggleSmmPanel(e, videoId) {
 function setSmmProvider(e, videoId, provider) {
     e.stopPropagation();
     const panel = document.getElementById(`smm-panel-${videoId}`);
-    panel.dataset.provider = provider; // Save state to DOM
+    panel.dataset.provider = provider;
 
     // Reset styles
-    document.getElementById(`prov-raja-${videoId}`).classList.remove('active');
+    document.getElementById(`prov-lite-${videoId}`).classList.remove('active');
     document.getElementById(`prov-one-${videoId}`).classList.remove('active');
 
     // Add active style to selected
-    if (provider === 'smmRaja') {
-        document.getElementById(`prov-raja-${videoId}`).classList.add('active');
+    if (provider === 'smmLite') {
+        document.getElementById(`prov-lite-${videoId}`).classList.add('active');
     } else {
         document.getElementById(`prov-one-${videoId}`).classList.add('active');
     }
@@ -85,8 +85,8 @@ async function submitSmmOrder(e, videoId, videoLink, quantity, btnElement) {
     let serviceName = '';
 
     // Map the IDs based on provider and mode combinations
-    if (provider === 'smmRaja' && mode === 'views') { serviceId = '7235'; serviceName = 'Views (R)'; }
-    if (provider === 'smmRaja' && mode === 'likes') { serviceId = '2150'; serviceName = 'Likes (R)'; }
+    if (provider === 'smmLite' && mode === 'views') { serviceId = '7378'; serviceName = 'Views (L)'; }
+    if (provider === 'smmLite' && mode === 'likes') { serviceId = '6944'; serviceName = 'Likes (L)'; }
     if (provider === 'smmPanelOne' && mode === 'views') { serviceId = '8429'; serviceName = 'Views (O)'; }
     if (provider === 'smmPanelOne' && mode === 'likes') { serviceId = '12981'; serviceName = 'Likes (O)'; }
 
@@ -156,11 +156,11 @@ async function fireAutomation(e, videoId, videoLink, btnElement) {
     // Hardcoded Payload for 24H Drip Feed
     const payload = {
         link: videoLink,
-        service: "7235",    // SMM Raja Views
+        service: "7378",    // SMM Raja Views
         quantity: 400,      // Total: 400 (4 runs of 100 views)
         runs: 4,            // 4 executions
         interval: 360,      // 6 Hours in minutes
-        provider: "smmRaja" // Defaults to SMM Raja backend logic
+        provider: "smmLite" // Defaults to SMM Raja backend logic
     };
 
     const originalContent = btnElement.innerHTML;
@@ -212,7 +212,7 @@ const SMM_BALANCE_URL = "https://mamba-clippers-backend-smm.onrender.com/api/smm
 
 async function fetchSmmBalances() {
     const btn = document.getElementById('refresh-funds-btn');
-    const rajaBal = document.getElementById('raja-balance');
+    const liteBal = document.getElementById('lite-balance');
     const panelOneBal = document.getElementById('panel-one-balance');
 
     // Trigger visual spinning effect
@@ -226,8 +226,8 @@ async function fetchSmmBalances() {
         const data = await response.json();
         
         // Update the DOM if data is returned
-        if (data.raja !== undefined) rajaBal.innerText = `₹${data.raja}`;
-        if (data.panelOne !== undefined) panelOneBal.innerText = `₹${data.panelOne}`;
+        if (data.lite !== undefined && liteBal) liteBal.innerText = `₹${data.lite}`;
+        if (data.panelOne !== undefined && panelOneBal) panelOneBal.innerText = `₹${data.panelOne}`;
         
     } catch (error) {
         console.error("Failed to fetch SMM balances:", error);
