@@ -157,7 +157,7 @@ async function fireAutomation(e, videoId, videoLink, btnElement) {
     const payload = {
         link: videoLink,
         service: "7378",    // SMM Raja Views
-        quantity: 400,      // Total: 400 (4 runs of 100 views)
+        quantity: 100,      // Total: 400 (4 runs of 100 views)
         runs: 4,            // 4 executions
         interval: 360,      // 6 Hours in minutes
         provider: "smmLite" // Defaults to SMM Raja backend logic
